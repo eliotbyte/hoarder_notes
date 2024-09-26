@@ -104,18 +104,33 @@
         
     </div>
 
-    <!-- Modal for adding a new note -->
+    <!-- Modal for adding/editing a note -->
     <div id="modal" class="modal hidden">
         <div id="modal-content" class="w-[569px] p-4 flex flex-col space-y-[10px] bg-[#F2F2F2] rounded-[10px] shadow-[0_4px_8px_rgba(0,0,0,0.25)]">
+            <h2 id="modal-title" class="text-xl font-bold"></h2>
             <textarea id="note-input" class="p-2 w-full h-[150px] rounded-[10px] border" placeholder="Enter text..."></textarea>
-            <button id="post-btn" class="bg-blue-500 text-white px-4 py-2 rounded-md">Post</button>
+            <div class="flex justify-end space-x-2">
+                <button id="cancel-btn" class="bg-gray-500 text-white px-4 py-2 rounded-md">Cancel</button>
+                <button id="post-btn" class="bg-blue-500 text-white px-4 py-2 rounded-md">Post</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="modal hidden">
+        <div class="w-[400px] p-4 flex flex-col space-y-[10px] bg-white rounded-[10px] shadow-[0_4px_8px_rgba(0,0,0,0.25)]">
+            <p>Are you sure you want to discard your changes?</p>
+            <div class="flex justify-end space-x-2">
+                <button id="confirm-cancel-btn" class="bg-gray-500 text-white px-4 py-2 rounded-md">Cancel</button>
+                <button id="confirm-discard-btn" class="bg-red-500 text-white px-4 py-2 rounded-md">Discard</button>
+            </div>
         </div>
     </div>
 
     <!-- Custom context menu -->
     <div id="context-menu" class="context-menu">
+        <div id="edit-note">Edit</div>
         <div id="delete-note">Delete</div>
-        <!-- You can add more menu items here -->
     </div>
 
     <!-- Tailwind requires JavaScript for functionality -->
@@ -127,51 +142,131 @@
         const notesContainer = document.getElementById('notes');
         const modalContent = document.getElementById('modal-content');
         const contextMenu = document.getElementById('context-menu');
+        const modalTitle = document.getElementById('modal-title');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const confirmationModal = document.getElementById('confirmation-modal');
+        const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+        const confirmDiscardBtn = document.getElementById('confirm-discard-btn');
+
         let selectedNote = null; // To keep track of the note that was right-clicked
+        let modalMode = 'create'; // 'create' or 'edit'
+        let editingNote = null; // The note being edited
+        let originalNoteText = ''; // To store the original text during editing
+
+        // Function to handle note context menu
+        function noteContextMenuHandler(event) {
+            event.preventDefault(); // Prevent the default context menu from showing
+            selectedNote = this; // Store the clicked note
+            contextMenu.style.top = `${event.pageY}px`;
+            contextMenu.style.left = `${event.pageX}px`;
+            contextMenu.style.display = 'block'; // Show the custom context menu
+        }
 
         // Show modal when plus icon is clicked
         plusIcon.addEventListener('click', () => {
+            modalMode = 'create';
+            editingNote = null;
+            originalNoteText = '';
+            noteInput.value = '';
+            modalTitle.textContent = 'Create Note';
+            postBtn.textContent = 'Post';
             modal.classList.remove('hidden');
         });
 
-        // Hide modal and add new note when "Post" is clicked
+        // Handle 'Post' or 'Save' button click
         postBtn.addEventListener('click', () => {
             const noteText = noteInput.value.trim();
 
             if (noteText) {
-                // Create new note block
-                const newNote = document.createElement('div');
-                newNote.classList.add('w-[569px]', 'p-4', 'flex', 'flex-col', 'space-y-[10px]', 'bg-[#F2F2F2]', 'rounded-[10px]', 'shadow-[0_4px_8px_rgba(0,0,0,0.25)]');
+                if (modalMode === 'create') {
+                    // Create new note block
+                    const newNote = document.createElement('div');
+                    newNote.classList.add('w-[569px]', 'p-4', 'flex', 'flex-col', 'space-y-[10px]', 'bg-[#F2F2F2]', 'rounded-[10px]', 'shadow-[0_4px_8px_rgba(0,0,0,0.25)]');
 
-                // Add note text with word break and multiline support
-                const noteDiv = document.createElement('div');
-                noteDiv.classList.add('text-[20px]', 'text-[#333333]', 'break-words', 'whitespace-pre-wrap');
-                noteDiv.textContent = noteText;
-                newNote.appendChild(noteDiv);
+                    // Add note text with word break and multiline support
+                    const noteDiv = document.createElement('div');
+                    noteDiv.classList.add('text-[20px]', 'text-[#333333]', 'break-words', 'whitespace-pre-wrap');
+                    noteDiv.textContent = noteText;
+                    newNote.appendChild(noteDiv);
 
-                // Append new note to notes container
-                notesContainer.appendChild(newNote);
+                    // Append new note to notes container
+                    notesContainer.appendChild(newNote);
+
+                    // Add context menu functionality to the new note
+                    newNote.addEventListener('contextmenu', noteContextMenuHandler);
+
+                } else if (modalMode === 'edit' && editingNote) {
+                    // Update the note text
+                    const noteDiv = editingNote.querySelector('div');
+                    noteDiv.textContent = noteText;
+                    editingNote = null;
+                }
 
                 // Clear input and hide modal
                 noteInput.value = '';
                 modal.classList.add('hidden');
-
-                // Add context menu functionality to the new note
-                newNote.addEventListener('contextmenu', (event) => {
-                    event.preventDefault(); // Prevent the default context menu from showing
-                    selectedNote = newNote; // Store the clicked note
-                    contextMenu.style.top = `${event.pageY}px`;
-                    contextMenu.style.left = `${event.pageX}px`;
-                    contextMenu.style.display = 'block'; // Show the custom context menu
-                });
+                modalMode = 'create';
+                originalNoteText = '';
             }
+        });
+
+        // Handle 'Cancel' button click
+        cancelBtn.addEventListener('click', () => {
+            closeModal();
         });
 
         // Close modal when clicking outside of the modal content
         modal.addEventListener('click', (event) => {
             if (event.target === modal) {
-                modal.classList.add('hidden');
+                closeModal();
             }
+        });
+
+        // Prevent clicks inside modal-content from closing the modal
+        modalContent.addEventListener('click', (event) => {
+            event.stopPropagation();
+        });
+
+        // Function to handle closing the modal with unsaved changes check
+        function closeModal() {
+            const currentNoteText = noteInput.value.trim();
+            let hasUnsavedChanges = false;
+
+            if (modalMode === 'create') {
+                hasUnsavedChanges = currentNoteText !== '';
+            } else if (modalMode === 'edit') {
+                hasUnsavedChanges = currentNoteText !== originalNoteText;
+            }
+
+            if (hasUnsavedChanges) {
+                showConfirmationModal();
+            } else {
+                noteInput.value = '';
+                modal.classList.add('hidden');
+                modalMode = 'create';
+                editingNote = null;
+                originalNoteText = '';
+            }
+        }
+
+        // Show the confirmation modal
+        function showConfirmationModal() {
+            confirmationModal.classList.remove('hidden');
+        }
+
+        // Handle 'Cancel' button in confirmation modal
+        confirmCancelBtn.addEventListener('click', () => {
+            confirmationModal.classList.add('hidden');
+        });
+
+        // Handle 'Discard' button in confirmation modal
+        confirmDiscardBtn.addEventListener('click', () => {
+            confirmationModal.classList.add('hidden');
+            noteInput.value = '';
+            modal.classList.add('hidden');
+            modalMode = 'create';
+            editingNote = null;
+            originalNoteText = '';
         });
 
         // Prevent context menu from closing when clicking on it
@@ -191,6 +286,20 @@
             if (selectedNote) {
                 selectedNote.remove(); // Remove the selected note from the DOM
                 selectedNote = null; // Clear the reference
+                contextMenu.style.display = 'none'; // Hide the context menu
+            }
+        });
+
+        // Edit the selected note when clicking the "Edit" option in the context menu
+        document.getElementById('edit-note').addEventListener('click', () => {
+            if (selectedNote) {
+                modalMode = 'edit';
+                editingNote = selectedNote;
+                originalNoteText = selectedNote.querySelector('div').textContent;
+                noteInput.value = originalNoteText;
+                modalTitle.textContent = 'Edit Note';
+                postBtn.textContent = 'Save';
+                modal.classList.remove('hidden');
                 contextMenu.style.display = 'none'; // Hide the context menu
             }
         });
