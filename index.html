@@ -1,19 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HTMX + Tailwind Project</title>
-  <link href="dist/styles.css" rel="stylesheet">
-  <script src="https://unpkg.com/htmx.org"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZAEBEAST</title>
+    <!-- Import fonts: Inter and Plus Jakarta Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&family=Plus+Jakarta+Sans:wght@600&display=swap" rel="stylesheet">
+    <!-- Import Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Set default fonts */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #E5E5E5; /* Background color for the page */
+            color: #333333; /* Default text color */
+        }
+        .jakarta-semibold {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 600;
+        }
+    </style>
 </head>
-<body class="p-4">
-  <h1 class="text-2xl font-bold">Привет, HTMX и Tailwind!</h1>
-  <button 
-    hx-get="/your-endpoint"
-    hx-trigger="click"
-    class="bg-blue-500 text-white p-2 rounded">
-    Загрузить данные
-  </button>
+<body>
+
+    <!-- Global container -->
+    <div class="max-w-[1169px] mx-auto flex flex-col items-center space-y-[24px] mt-[49px]">
+
+        <!-- Header -->
+        <div class="w-full flex justify-between items-center">
+            <!-- Logo text -->
+            <div class="jakarta-semibold text-[32px] text-[#333333]">
+                ZAEBEAST
+            </div>
+            <!-- Refresh icon -->
+            <div>
+                <img src="https://www.svgrepo.com/download/533701/refresh-cw.svg" alt="Refresh Icon" class="w-6 h-6">
+            </div>
+        </div>
+
+        <!-- Second block (Note) -->
+        <div class="w-[569px] p-4 flex flex-col space-y-[10px] bg-[#F2F2F2] rounded-[10px] shadow-[0_4px_8px_rgba(0,0,0,0.25)]">
+            <!-- Text block -->
+            <div class="text-[20px] text-[#333333]">
+                Note example
+            </div>
+        </div>
+        
+    </div>
+
 </body>
 </html>
