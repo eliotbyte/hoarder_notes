@@ -32,6 +32,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            z-index: 10000; /* Ensure the modal is above all other elements */
         }
         /* Fixed header */
         .fixed-header {
@@ -40,7 +41,7 @@
             left: 0;
             width: 100%;
             background-color: #E5E5E5; /* Match the background color of the page */
-            z-index: 1000; /* Ensure the header is always on top */
+            z-index: 1000; /* Ensure the header is always on top but below the modal */
             box-shadow: 0 2px 8px #E5E5E5; /* Full intensity shadow with the same color as the background */
         }
         .header-container {
@@ -54,6 +55,25 @@
         .content-spacing {
             margin-top: 80px; /* To ensure the content is not hidden behind the fixed header */
             padding-bottom: 49px; /* Add 49px padding at the bottom of the main content */
+        }
+        /* Custom context menu styles */
+        .context-menu {
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            z-index: 1001;
+            display: none;
+            border-radius: 8px; /* Rounded corners for the context menu */
+        }
+        .context-menu div {
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 6px; /* Rounded corners for each menu item */
+        }
+        .context-menu div:hover {
+            background-color: #f0f0f0;
         }
     </style>
 </head>
@@ -92,6 +112,12 @@
         </div>
     </div>
 
+    <!-- Custom context menu -->
+    <div id="context-menu" class="context-menu">
+        <div id="delete-note">Delete</div>
+        <!-- You can add more menu items here -->
+    </div>
+
     <!-- Tailwind requires JavaScript for functionality -->
     <script>
         const plusIcon = document.getElementById('plus-icon');
@@ -100,6 +126,8 @@
         const noteInput = document.getElementById('note-input');
         const notesContainer = document.getElementById('notes');
         const modalContent = document.getElementById('modal-content');
+        const contextMenu = document.getElementById('context-menu');
+        let selectedNote = null; // To keep track of the note that was right-clicked
 
         // Show modal when plus icon is clicked
         plusIcon.addEventListener('click', () => {
@@ -127,6 +155,15 @@
                 // Clear input and hide modal
                 noteInput.value = '';
                 modal.classList.add('hidden');
+
+                // Add context menu functionality to the new note
+                newNote.addEventListener('contextmenu', (event) => {
+                    event.preventDefault(); // Prevent the default context menu from showing
+                    selectedNote = newNote; // Store the clicked note
+                    contextMenu.style.top = `${event.pageY}px`;
+                    contextMenu.style.left = `${event.pageX}px`;
+                    contextMenu.style.display = 'block'; // Show the custom context menu
+                });
             }
         });
 
@@ -134,6 +171,27 @@
         modal.addEventListener('click', (event) => {
             if (event.target === modal) {
                 modal.classList.add('hidden');
+            }
+        });
+
+        // Prevent context menu from closing when clicking on it
+        contextMenu.addEventListener('contextmenu', (event) => {
+            event.preventDefault(); // Prevent context menu behavior on itself
+        });
+
+        // Hide the context menu when clicking anywhere else
+        document.addEventListener('click', (event) => {
+            if (!contextMenu.contains(event.target)) {
+                contextMenu.style.display = 'none'; // Hide the custom context menu
+            }
+        });
+
+        // Delete the selected note when clicking the "Delete" option in the context menu
+        document.getElementById('delete-note').addEventListener('click', () => {
+            if (selectedNote) {
+                selectedNote.remove(); // Remove the selected note from the DOM
+                selectedNote = null; // Clear the reference
+                contextMenu.style.display = 'none'; // Hide the context menu
             }
         });
     </script>
