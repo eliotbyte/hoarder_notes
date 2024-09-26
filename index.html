@@ -33,15 +33,34 @@
             justify-content: center;
             align-items: center;
         }
+        /* Fixed header */
+        .fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #E5E5E5; /* Match the background color of the page */
+            z-index: 1000; /* Ensure the header is always on top */
+            box-shadow: 0 2px 8px #E5E5E5; /* Full intensity shadow with the same color as the background */
+        }
+        .header-container {
+            max-width: 1169px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 24px; /* Padding to make the header more spacious */
+            align-items: center;
+        }
+        .content-spacing {
+            margin-top: 80px; /* To ensure the content is not hidden behind the fixed header */
+        }
     </style>
 </head>
 <body>
 
-    <!-- Global container -->
-    <div class="max-w-[1169px] mx-auto flex flex-col items-center space-y-[24px] mt-[49px]">
-
-        <!-- Header -->
-        <div class="w-full flex justify-between items-center">
+    <!-- Header (Fixed) -->
+    <div class="fixed-header">
+        <div class="header-container">
             <!-- Logo text -->
             <div class="jakarta-semibold text-[32px] text-[#333333]">
                 ZAEBEAST
@@ -52,6 +71,10 @@
                 <img id="plus-icon" src="https://www.svgrepo.com/download/491467/plus.svg" alt="Plus Icon" class="w-6 h-6 cursor-pointer">
             </div>
         </div>
+    </div>
+
+    <!-- Main content container (with top margin to account for the fixed header) -->
+    <div class="content-spacing max-w-[1169px] mx-auto flex flex-col items-center space-y-[24px]">
 
         <!-- Notes container -->
         <div id="notes" class="w-full flex flex-col items-center space-y-[24px]">
