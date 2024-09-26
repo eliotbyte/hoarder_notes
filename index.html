@@ -19,6 +19,20 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
             font-weight: 600;
         }
+        .hidden {
+            display: none;
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
@@ -32,21 +46,79 @@
             <div class="jakarta-semibold text-[32px] text-[#333333]">
                 ZAEBEAST
             </div>
-            <!-- Refresh icon -->
-            <div>
+            <!-- Icons (Refresh and Plus) -->
+            <div class="flex space-x-4">
                 <img src="https://www.svgrepo.com/download/533701/refresh-cw.svg" alt="Refresh Icon" class="w-6 h-6">
+                <img id="plus-icon" src="https://www.svgrepo.com/download/491467/plus.svg" alt="Plus Icon" class="w-6 h-6 cursor-pointer">
             </div>
         </div>
 
-        <!-- Second block (Note) -->
-        <div class="w-[569px] p-4 flex flex-col space-y-[10px] bg-[#F2F2F2] rounded-[10px] shadow-[0_4px_8px_rgba(0,0,0,0.25)]">
-            <!-- Text block -->
-            <div class="text-[20px] text-[#333333]">
-                Note example
+        <!-- Notes container -->
+        <div id="notes" class="w-full flex flex-col items-center space-y-[24px]">
+            <!-- Note block -->
+            <div class="w-[569px] p-4 flex flex-col space-y-[10px] bg-[#F2F2F2] rounded-[10px] shadow-[0_4px_8px_rgba(0,0,0,0.25)]">
+                <!-- Text block -->
+                <div class="text-[20px] text-[#333333]">
+                    Note example
+                </div>
             </div>
         </div>
         
     </div>
+
+    <!-- Modal for adding a new note -->
+    <div id="modal" class="modal hidden">
+        <div id="modal-content" class="w-[569px] p-4 flex flex-col space-y-[10px] bg-[#F2F2F2] rounded-[10px] shadow-[0_4px_8px_rgba(0,0,0,0.25)]">
+            <textarea id="note-input" class="p-2 w-full h-[150px] rounded-[10px] border" placeholder="Enter text..."></textarea>
+            <button id="post-btn" class="bg-blue-500 text-white px-4 py-2 rounded-md">Post</button>
+        </div>
+    </div>
+
+    <!-- Tailwind requires JavaScript for functionality -->
+    <script>
+        const plusIcon = document.getElementById('plus-icon');
+        const modal = document.getElementById('modal');
+        const postBtn = document.getElementById('post-btn');
+        const noteInput = document.getElementById('note-input');
+        const notesContainer = document.getElementById('notes');
+        const modalContent = document.getElementById('modal-content');
+
+        // Show modal when plus icon is clicked
+        plusIcon.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+        });
+
+        // Hide modal and add new note when "Post" is clicked
+        postBtn.addEventListener('click', () => {
+            const noteText = noteInput.value.trim();
+
+            if (noteText) {
+                // Create new note block
+                const newNote = document.createElement('div');
+                newNote.classList.add('w-[569px]', 'p-4', 'flex', 'flex-col', 'space-y-[10px]', 'bg-[#F2F2F2]', 'rounded-[10px]', 'shadow-[0_4px_8px_rgba(0,0,0,0.25)]');
+
+                // Add note text
+                const noteDiv = document.createElement('div');
+                noteDiv.classList.add('text-[20px]', 'text-[#333333]');
+                noteDiv.textContent = noteText;
+                newNote.appendChild(noteDiv);
+
+                // Append new note to notes container
+                notesContainer.appendChild(newNote);
+
+                // Clear input and hide modal
+                noteInput.value = '';
+                modal.classList.add('hidden');
+            }
+        });
+
+        // Close modal when clicking outside of the modal content
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.classList.add('hidden');
+            }
+        });
+    </script>
 
 </body>
 </html>
