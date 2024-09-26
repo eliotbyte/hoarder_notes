@@ -55,13 +55,7 @@
 
         <!-- Notes container -->
         <div id="notes" class="w-full flex flex-col items-center space-y-[24px]">
-            <!-- Note block -->
-            <div class="w-[569px] p-4 flex flex-col space-y-[10px] bg-[#F2F2F2] rounded-[10px] shadow-[0_4px_8px_rgba(0,0,0,0.25)]">
-                <!-- Text block -->
-                <div class="text-[20px] text-[#333333]">
-                    Note example
-                </div>
-            </div>
+            <!-- Notes will be added here dynamically -->
         </div>
         
     </div>
@@ -97,9 +91,9 @@
                 const newNote = document.createElement('div');
                 newNote.classList.add('w-[569px]', 'p-4', 'flex', 'flex-col', 'space-y-[10px]', 'bg-[#F2F2F2]', 'rounded-[10px]', 'shadow-[0_4px_8px_rgba(0,0,0,0.25)]');
 
-                // Add note text
+                // Add note text with word break and multiline support
                 const noteDiv = document.createElement('div');
-                noteDiv.classList.add('text-[20px]', 'text-[#333333]');
+                noteDiv.classList.add('text-[20px]', 'text-[#333333]', 'break-words', 'whitespace-pre-wrap');
                 noteDiv.textContent = noteText;
                 newNote.appendChild(noteDiv);
 
