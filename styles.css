@@ -7,12 +7,14 @@
     --background-color: #E5E5E5;
     --note-background-color: #F2F2F2;
     --text-color: #333333;
+    --icon-filter: invert(16%) sepia(0%) saturate(333%) hue-rotate(225deg) brightness(96%) contrast(87%);
 }
 
 .dark {
     --background-color: #191919;
     --note-background-color: #404040;
     --text-color: #E5E5E5;
+    --icon-filter: invert(75%) sepia(94%) saturate(1%) hue-rotate(336deg) brightness(102%) contrast(94%);
 }
 
 /* Apply the CSS variables */
@@ -26,6 +28,10 @@
 
 .text-textColor {
     color: var(--text-color);
+}
+
+.icon-filter {
+    filter: var(--icon-filter);
 }
 
 /* Set default fonts */
@@ -146,6 +152,8 @@ body {
     height: 150px;
     border-radius: 10px;
     border: 1px solid #ccc;
+    background-color: var(--note-background-color);
+    color: var(--text-color);
 }
 
 /* Confirmation modal content */
