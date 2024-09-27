@@ -10,6 +10,7 @@ const cancelBtn = document.getElementById('cancel-btn');
 const confirmationModal = document.getElementById('confirmation-modal');
 const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
 const confirmDiscardBtn = document.getElementById('confirm-discard-btn');
+const themeToggle = document.getElementById('theme-toggle');
 
 let selectedNote = null; // To keep track of the note that was right-clicked
 let modalMode = 'create'; // 'create' or 'edit'
@@ -20,7 +21,7 @@ let originalNoteText = ''; // To store the original text during editing
 function createNote(text) {
     // Create new note block
     const newNote = document.createElement('div');
-    newNote.classList.add('note');
+    newNote.classList.add('note', 'bg-noteBackground', 'text-textColor');
     newNote.id = 'note-' + Date.now(); // Assign an id
 
     // Add note text with word break and multiline support
@@ -190,3 +191,41 @@ document.getElementById('edit-note').addEventListener('click', () => {
         contextMenu.style.display = 'none'; // Hide the context menu
     }
 });
+
+// Theme toggle functionality
+themeToggle.addEventListener('click', () => {
+    // Toggle the 'dark' class on the HTML element
+    document.documentElement.classList.toggle('dark');
+    // Update the icon
+    updateThemeIcon();
+    // Save the user's preference in localStorage
+    if (document.documentElement.classList.contains('dark')) {
+        localStorage.setItem('theme', 'dark');
+    } else {
+        localStorage.setItem('theme', 'light');
+    }
+});
+
+// Function to update the theme icon based on the current theme
+function updateThemeIcon() {
+    if (document.documentElement.classList.contains('dark')) {
+        themeToggle.src = 'https://www.svgrepo.com/download/45607/day-of-sun.svg';
+        themeToggle.alt = 'Switch to Light Mode';
+    } else {
+        themeToggle.src = 'https://www.svgrepo.com/download/487620/night.svg';
+        themeToggle.alt = 'Switch to Dark Mode';
+    }
+}
+
+// On page load, set the theme based on user preference or system setting
+(function initializeTheme() {
+    const userTheme = localStorage.getItem('theme');
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    if (userTheme === 'dark' || (!userTheme && systemPrefersDark)) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+    updateThemeIcon();
+})();

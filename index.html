@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <!-- head content -->
     <meta charset="UTF-8">
@@ -14,19 +14,20 @@
     <!-- Link to your external JavaScript file -->
     <script src="script.js" defer></script>
 </head>
-<body>
-
+<body class="bg-background text-textColor">
     <!-- Header (Fixed) -->
     <div class="fixed-header">
         <div class="header-container">
             <!-- Logo text -->
-            <div class="jakarta-semibold text-[32px] text-[#333333]">
+            <div class="jakarta-semibold text-[32px] text-textColor">
                 ZAEBEAST
             </div>
-            <!-- Icons (Refresh and Plus) -->
-            <div class="flex space-x-4">
+            <!-- Icons (Refresh, Plus, and Theme Toggle) -->
+            <div class="flex space-x-4 items-center">
                 <img src="https://www.svgrepo.com/download/533701/refresh-cw.svg" alt="Refresh Icon" class="w-6 h-6">
                 <img id="plus-icon" src="https://www.svgrepo.com/download/491467/plus.svg" alt="Plus Icon" class="w-6 h-6 cursor-pointer">
+                <!-- Theme Toggle Icon -->
+                <img id="theme-toggle" src="https://www.svgrepo.com/download/487620/night.svg" alt="Theme Toggle Icon" class="w-6 h-6 cursor-pointer">
             </div>
         </div>
     </div>
@@ -42,8 +43,8 @@
     <!-- Modal for adding/editing a note -->
     <div id="modal" class="modal hidden">
         <div id="modal-content" class="modal-content">
-            <h2 id="modal-title" class="text-xl font-bold"></h2>
-            <textarea id="note-input" class="note-input" placeholder="Enter text..."></textarea>
+            <h2 id="modal-title" class="text-xl font-bold text-textColor"></h2>
+            <textarea id="note-input" class="note-input bg-noteBackground text-textColor" placeholder="Enter text..."></textarea>
             <div class="flex justify-end space-x-2">
                 <button id="cancel-btn" class="bg-gray-500 text-white px-4 py-2 rounded-md">Cancel</button>
                 <button id="post-btn" class="bg-blue-500 text-white px-4 py-2 rounded-md">Post</button>
@@ -54,7 +55,7 @@
     <!-- Confirmation Modal -->
     <div id="confirmation-modal" class="modal hidden">
         <div class="confirmation-content">
-            <p>Are you sure you want to discard your changes?</p>
+            <p class="text-textColor">Are you sure you want to discard your changes?</p>
             <div class="flex justify-end space-x-2">
                 <button id="confirm-cancel-btn" class="bg-gray-500 text-white px-4 py-2 rounded-md">Cancel</button>
                 <button id="confirm-discard-btn" class="bg-red-500 text-white px-4 py-2 rounded-md">Discard</button>
@@ -63,7 +64,7 @@
     </div>
 
     <!-- Custom context menu -->
-    <div id="context-menu" class="context-menu">
+    <div id="context-menu" class="context-menu bg-white dark:bg-noteBackground text-textColor">
         <div id="edit-note">Edit</div>
         <div id="delete-note">Delete</div>
     </div>
