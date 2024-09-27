@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- head content -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZAEBEAST</title>
@@ -75,6 +76,33 @@
         .context-menu div:hover {
             background-color: #f0f0f0;
         }
+        /* Note styles */
+        .note {
+            width: 569px;
+            padding: 16px; /* p-4 */
+            display: flex;
+            flex-direction: column;
+            background-color: #F2F2F2;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+            position: relative;
+            margin-bottom: 24px; /* space-y-[24px] */
+        }
+
+        .note-text {
+            font-size: 20px; /* text-[20px] */
+            color: #333333;
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+
+        .note-time {
+            font-size: 12px;
+            color: #666666;
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+        }
     </style>
 </head>
 <body>
@@ -95,13 +123,11 @@
     </div>
 
     <!-- Main content container (with top margin to account for the fixed header and padding at the bottom) -->
-    <div class="content-spacing max-w-[1169px] mx-auto flex flex-col items-center space-y-[24px]">
-
+    <div class="content-spacing max-w-[1169px] mx-auto flex flex-col items-center">
         <!-- Notes container -->
-        <div id="notes" class="w-full flex flex-col items-center space-y-[24px]">
+        <div id="notes" class="w-full flex flex-col items-center">
             <!-- Notes will be added here dynamically -->
         </div>
-        
     </div>
 
     <!-- Modal for adding/editing a note -->
@@ -153,6 +179,47 @@
         let editingNote = null; // The note being edited
         let originalNoteText = ''; // To store the original text during editing
 
+        // Function to create a note
+        function createNote(text) {
+            // Create new note block
+            const newNote = document.createElement('div');
+            newNote.classList.add('note');
+            newNote.id = 'note-' + Date.now(); // Assign an id
+
+            // Add note text with word break and multiline support
+            const noteDiv = document.createElement('div');
+            noteDiv.classList.add('note-text');
+            noteDiv.textContent = text;
+
+            // Create time div
+            const timeDiv = document.createElement('div');
+            timeDiv.classList.add('note-time');
+            const currentTime = new Date().toUTCString();
+            timeDiv.textContent = currentTime;
+
+            // Append noteText and timeDiv to newNote
+            newNote.appendChild(noteDiv);
+            newNote.appendChild(timeDiv);
+
+            // Append new note to notes container
+            notesContainer.appendChild(newNote);
+
+            // Add context menu functionality to the new note
+            newNote.addEventListener('contextmenu', noteContextMenuHandler);
+
+            return newNote;
+        }
+
+        // Function to edit a note
+        function editNote(noteElement, newText) {
+            const noteDiv = noteElement.querySelector('.note-text');
+            noteDiv.textContent = newText;
+
+            const timeDiv = noteElement.querySelector('.note-time');
+            const currentTime = new Date().toUTCString();
+            timeDiv.textContent = currentTime;
+        }
+
         // Function to handle note context menu
         function noteContextMenuHandler(event) {
             event.preventDefault(); // Prevent the default context menu from showing
@@ -179,26 +246,9 @@
 
             if (noteText) {
                 if (modalMode === 'create') {
-                    // Create new note block
-                    const newNote = document.createElement('div');
-                    newNote.classList.add('w-[569px]', 'p-4', 'flex', 'flex-col', 'space-y-[10px]', 'bg-[#F2F2F2]', 'rounded-[10px]', 'shadow-[0_4px_8px_rgba(0,0,0,0.25)]');
-
-                    // Add note text with word break and multiline support
-                    const noteDiv = document.createElement('div');
-                    noteDiv.classList.add('text-[20px]', 'text-[#333333]', 'break-words', 'whitespace-pre-wrap');
-                    noteDiv.textContent = noteText;
-                    newNote.appendChild(noteDiv);
-
-                    // Append new note to notes container
-                    notesContainer.appendChild(newNote);
-
-                    // Add context menu functionality to the new note
-                    newNote.addEventListener('contextmenu', noteContextMenuHandler);
-
+                    createNote(noteText);
                 } else if (modalMode === 'edit' && editingNote) {
-                    // Update the note text
-                    const noteDiv = editingNote.querySelector('div');
-                    noteDiv.textContent = noteText;
+                    editNote(editingNote, noteText);
                     editingNote = null;
                 }
 
@@ -295,7 +345,7 @@
             if (selectedNote) {
                 modalMode = 'edit';
                 editingNote = selectedNote;
-                originalNoteText = selectedNote.querySelector('div').textContent;
+                originalNoteText = selectedNote.querySelector('.note-text').textContent;
                 noteInput.value = originalNoteText;
                 modalTitle.textContent = 'Edit Note';
                 postBtn.textContent = 'Save';
