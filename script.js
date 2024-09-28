@@ -12,6 +12,12 @@ const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
 const confirmDiscardBtn = document.getElementById('confirm-discard-btn');
 const themeToggle = document.getElementById('theme-toggle');
 const replyNoteOption = document.getElementById('reply-note');
+const removeReplyIcon = document.getElementById('remove-reply-icon');
+const removeReplyModal = document.getElementById('remove-reply-modal');
+const removeReplyCancelBtn = document.getElementById('remove-reply-cancel-btn');
+const removeReplyConfirmBtn = document.getElementById('remove-reply-confirm-btn');
+const replyPreview = document.getElementById('reply-preview');
+const replyPreviewText = document.getElementById('reply-preview-text');
 
 let selectedNote = null; // To keep track of the note that was right-clicked
 let modalMode = 'create'; // 'create', 'edit', or 'reply'
@@ -19,6 +25,7 @@ let editingNote = null; // The note being edited
 let originalNoteText = ''; // To store the original text during editing
 let replyingToNote = null; // The note being replied to
 let replyingToNoteId = null; // The id of the note being replied to
+let replyPreviewTextContent = ''; // To store the reply preview text during editing
 
 // Function to create a note
 function createNote(text, replyToNote = null, replyToNoteId = null) {
@@ -28,14 +35,22 @@ function createNote(text, replyToNote = null, replyToNoteId = null) {
     newNote.id = 'note-' + Date.now(); // Assign an id
 
     // If this note is a reply, add the reply preview above the note text
-    if (replyToNote) {
+    if (replyToNoteId) {
         // Create a link that wraps the reply preview
         const replyPreviewLink = document.createElement('a');
         replyPreviewLink.href = 'note?id=' + replyToNoteId; // Use the id of the note being replied to
         replyPreviewLink.classList.add('reply-preview-in-note', 'bg-background', 'text-textColor', 'rounded-md', 'p-2', 'mb-2', 'block'); // Add 'block' to make it a block-level element
 
         // Get the text of the note we're replying to
-        const replyToText = replyToNote.querySelector('.note-text').textContent;
+        let replyToText = '';
+
+        if (replyToNote) {
+            replyToText = replyToNote.querySelector('.note-text').textContent;
+        } else {
+            // Since we might not have the actual note element, use stored text content
+            replyToText = replyPreviewTextContent;
+        }
+
         const shortenedText = replyToText.length > 100 ? replyToText.substring(0, 100) + '...' : replyToText;
 
         // Create a span to hold the text
@@ -81,6 +96,35 @@ function editNote(noteElement, newText) {
     const timeDiv = noteElement.querySelector('.note-time');
     const currentTime = new Date().toUTCString();
     timeDiv.textContent = currentTime;
+
+    // Handle reply preservation or removal
+    if (!replyingToNoteId) {
+        // Remove the reply block from the note if it exists
+        const replyPreviewInNote = noteElement.querySelector('.reply-preview-in-note');
+        if (replyPreviewInNote) {
+            replyPreviewInNote.remove();
+        }
+    } else {
+        // Ensure the reply block is present
+        let replyPreviewInNote = noteElement.querySelector('.reply-preview-in-note');
+
+        if (!replyPreviewInNote) {
+            // Create a new reply preview block
+            replyPreviewInNote = document.createElement('a');
+            replyPreviewInNote.href = 'note?id=' + replyingToNoteId;
+            replyPreviewInNote.classList.add('reply-preview-in-note', 'bg-background', 'text-textColor', 'rounded-md', 'p-2', 'mb-2', 'block');
+
+            // Create a span to hold the text
+            const replyTextSpan = document.createElement('span');
+            replyTextSpan.textContent = replyPreviewTextContent; // Use stored text
+
+            // Append the text to the link
+            replyPreviewInNote.appendChild(replyTextSpan);
+
+            // Insert the reply preview before the note text
+            noteElement.insertBefore(replyPreviewInNote, noteDiv);
+        }
+    }
 }
 
 // Function to handle note context menu
@@ -103,9 +147,7 @@ plusIcon.addEventListener('click', () => {
     modalTitle.textContent = 'Create Note';
     postBtn.textContent = 'Post';
     // Hide reply preview if visible
-    const replyPreview = document.getElementById('reply-preview');
-    replyPreview.classList.add('hidden');
-    replyPreview.textContent = '';
+    removeReply();
     modal.classList.remove('hidden');
 });
 
@@ -116,11 +158,20 @@ postBtn.addEventListener('click', () => {
     if (noteText) {
         if (modalMode === 'create') {
             createNote(noteText);
+            // Placeholder for API call to create a new note
+            // TODO: Replace this with actual API call to backend
         } else if (modalMode === 'edit' && editingNote) {
             editNote(editingNote, noteText);
+
+            // Placeholder for API call to update the note
+            // TODO: Replace this with actual API call to backend
+
             editingNote = null;
-        } else if (modalMode === 'reply' && replyingToNote) {
+        } else if (modalMode === 'reply') {
             createNote(noteText, replyingToNote, replyingToNoteId);
+            // Placeholder for API call to create a reply
+            // TODO: Replace this with actual API call to backend
+
             replyingToNote = null;
             replyingToNoteId = null;
         }
@@ -131,9 +182,7 @@ postBtn.addEventListener('click', () => {
         modalMode = 'create';
         originalNoteText = '';
         // Hide reply preview
-        const replyPreview = document.getElementById('reply-preview');
-        replyPreview.classList.add('hidden');
-        replyPreview.textContent = '';
+        removeReply();
     }
 });
 
@@ -178,9 +227,7 @@ function closeModal() {
         replyingToNoteId = null;
         originalNoteText = '';
         // Hide reply preview
-        const replyPreview = document.getElementById('reply-preview');
-        replyPreview.classList.add('hidden');
-        replyPreview.textContent = '';
+        removeReply();
     }
 }
 
@@ -205,10 +252,34 @@ confirmDiscardBtn.addEventListener('click', () => {
     replyingToNoteId = null;
     originalNoteText = '';
     // Hide reply preview
-    const replyPreview = document.getElementById('reply-preview');
-    replyPreview.classList.add('hidden');
-    replyPreview.textContent = '';
+    removeReply();
 });
+
+// Event listener for remove reply icon
+removeReplyIcon.addEventListener('click', () => {
+    // Show the confirmation modal for removing the reply
+    removeReplyModal.classList.remove('hidden');
+});
+
+// Handle 'Cancel' button in remove reply confirmation modal
+removeReplyCancelBtn.addEventListener('click', () => {
+    removeReplyModal.classList.add('hidden');
+});
+
+// Handle 'Remove' button in remove reply confirmation modal
+removeReplyConfirmBtn.addEventListener('click', () => {
+    removeReply();
+    removeReplyModal.classList.add('hidden');
+});
+
+// Function to remove the reply
+function removeReply() {
+    replyPreview.classList.add('hidden');
+    replyPreviewText.textContent = '';
+    replyingToNote = null;
+    replyingToNoteId = null;
+    replyPreviewTextContent = '';
+}
 
 // Prevent context menu from closing when clicking on it
 contextMenu.addEventListener('contextmenu', (event) => {
@@ -226,6 +297,9 @@ document.addEventListener('click', (event) => {
 document.getElementById('delete-note').addEventListener('click', () => {
     if (selectedNote) {
         selectedNote.remove(); // Remove the selected note from the DOM
+        // Placeholder for API call to delete the note
+        // TODO: Replace this with actual API call to backend
+
         selectedNote = null; // Clear the reference
         contextMenu.style.display = 'none'; // Hide the context menu
     }
@@ -238,13 +312,28 @@ document.getElementById('edit-note').addEventListener('click', () => {
         editingNote = selectedNote;
         originalNoteText = selectedNote.querySelector('.note-text').textContent;
         noteInput.value = originalNoteText;
+
+        // Check if the note has a reply preview
+        const replyPreviewInNote = selectedNote.querySelector('.reply-preview-in-note');
+        if (replyPreviewInNote) {
+            // Set up the reply preview in the modal
+            const replyToText = replyPreviewInNote.textContent;
+            showReplyPreview(replyToText);
+
+            // Retrieve the id from the href attribute
+            const href = replyPreviewInNote.getAttribute('href');
+            const urlParams = new URLSearchParams(href.split('?')[1]);
+            replyingToNoteId = urlParams.get('id');
+
+            // Store the reply text content
+            replyPreviewTextContent = replyToText;
+        } else {
+            removeReply();
+        }
+
         modalTitle.textContent = 'Edit Note';
         postBtn.textContent = 'Save';
         modal.classList.remove('hidden');
-        // Hide reply preview if visible
-        const replyPreview = document.getElementById('reply-preview');
-        replyPreview.classList.add('hidden');
-        replyPreview.textContent = '';
         contextMenu.style.display = 'none'; // Hide the context menu
     }
 });
@@ -259,6 +348,8 @@ replyNoteOption.addEventListener('click', () => {
         noteInput.value = '';
         // Get the text of the note we're replying to
         const replyToText = selectedNote.querySelector('.note-text').textContent;
+        // Store the reply text content
+        replyPreviewTextContent = replyToText;
         // Show the reply preview in the modal
         showReplyPreview(replyToText);
         modalTitle.textContent = 'Reply to Note';
@@ -270,9 +361,8 @@ replyNoteOption.addEventListener('click', () => {
 
 // Function to show the reply preview in the modal
 function showReplyPreview(text) {
-    const replyPreview = document.getElementById('reply-preview');
     const shortenedText = text.length > 100 ? text.substring(0, 100) + '...' : text;
-    replyPreview.textContent = shortenedText;
+    replyPreviewText.textContent = shortenedText;
     replyPreview.classList.remove('hidden');
 }
 
