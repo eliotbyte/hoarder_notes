@@ -44,6 +44,10 @@
     <div id="modal" class="modal hidden">
         <div id="modal-content" class="modal-content">
             <h2 id="modal-title" class="text-xl font-bold text-textColor"></h2>
+            <!-- Reply preview -->
+            <div id="reply-preview" class="reply-preview bg-background text-textColor rounded-md p-2 mb-2 hidden">
+                <!-- The shortened text of the note we're replying to will be displayed here -->
+            </div>
             <textarea id="note-input" class="note-input bg-noteBackground text-textColor" placeholder="Enter text..."></textarea>
             <div class="flex justify-end space-x-2">
                 <button id="cancel-btn" class="bg-gray-500 text-white px-4 py-2 rounded-md">Cancel</button>
@@ -64,9 +68,10 @@
     </div>
 
     <!-- Custom context menu -->
-    <div id="context-menu" class="context-menu bg-white dark:bg-noteBackground text-textColor">
-        <div id="edit-note">Edit</div>
-        <div id="delete-note">Delete</div>
+    <div id="context-menu" class="context-menu bg-noteBackground text-textColor">
+        <div id="reply-note" class="px-4 py-2 cursor-pointer hover:bg-background">Reply</div>
+        <div id="edit-note" class="px-4 py-2 cursor-pointer hover:bg-background">Edit</div>
+        <div id="delete-note" class="px-4 py-2 cursor-pointer hover:bg-background">Delete</div>
     </div>
 
 </body>

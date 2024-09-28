@@ -11,18 +11,43 @@ const confirmationModal = document.getElementById('confirmation-modal');
 const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
 const confirmDiscardBtn = document.getElementById('confirm-discard-btn');
 const themeToggle = document.getElementById('theme-toggle');
+const replyNoteOption = document.getElementById('reply-note');
 
 let selectedNote = null; // To keep track of the note that was right-clicked
-let modalMode = 'create'; // 'create' or 'edit'
+let modalMode = 'create'; // 'create', 'edit', or 'reply'
 let editingNote = null; // The note being edited
 let originalNoteText = ''; // To store the original text during editing
+let replyingToNote = null; // The note being replied to
+let replyingToNoteId = null; // The id of the note being replied to
 
 // Function to create a note
-function createNote(text) {
+function createNote(text, replyToNote = null, replyToNoteId = null) {
     // Create new note block
     const newNote = document.createElement('div');
     newNote.classList.add('note', 'bg-noteBackground', 'text-textColor');
     newNote.id = 'note-' + Date.now(); // Assign an id
+
+    // If this note is a reply, add the reply preview above the note text
+    if (replyToNote) {
+        // Create a link that wraps the reply preview
+        const replyPreviewLink = document.createElement('a');
+        replyPreviewLink.href = 'note?id=' + replyToNoteId; // Use the id of the note being replied to
+        replyPreviewLink.classList.add('reply-preview-in-note', 'bg-background', 'text-textColor', 'rounded-md', 'p-2', 'mb-2', 'block'); // Add 'block' to make it a block-level element
+
+        // Get the text of the note we're replying to
+        const replyToText = replyToNote.querySelector('.note-text').textContent;
+        const shortenedText = replyToText.length > 100 ? replyToText.substring(0, 100) + '...' : replyToText;
+
+        // Create a span to hold the text
+        const replyTextSpan = document.createElement('span');
+        replyTextSpan.textContent = shortenedText;
+
+        // Append the text to the link
+        replyPreviewLink.appendChild(replyTextSpan);
+
+        // Append the link to the new note
+        newNote.appendChild(replyPreviewLink);
+    }
 
     // Add note text with word break and multiline support
     const noteDiv = document.createElement('div');
@@ -71,10 +96,16 @@ function noteContextMenuHandler(event) {
 plusIcon.addEventListener('click', () => {
     modalMode = 'create';
     editingNote = null;
+    replyingToNote = null;
+    replyingToNoteId = null;
     originalNoteText = '';
     noteInput.value = '';
     modalTitle.textContent = 'Create Note';
     postBtn.textContent = 'Post';
+    // Hide reply preview if visible
+    const replyPreview = document.getElementById('reply-preview');
+    replyPreview.classList.add('hidden');
+    replyPreview.textContent = '';
     modal.classList.remove('hidden');
 });
 
@@ -88,6 +119,10 @@ postBtn.addEventListener('click', () => {
         } else if (modalMode === 'edit' && editingNote) {
             editNote(editingNote, noteText);
             editingNote = null;
+        } else if (modalMode === 'reply' && replyingToNote) {
+            createNote(noteText, replyingToNote, replyingToNoteId);
+            replyingToNote = null;
+            replyingToNoteId = null;
         }
 
         // Clear input and hide modal
@@ -95,6 +130,10 @@ postBtn.addEventListener('click', () => {
         modal.classList.add('hidden');
         modalMode = 'create';
         originalNoteText = '';
+        // Hide reply preview
+        const replyPreview = document.getElementById('reply-preview');
+        replyPreview.classList.add('hidden');
+        replyPreview.textContent = '';
     }
 });
 
@@ -124,6 +163,8 @@ function closeModal() {
         hasUnsavedChanges = currentNoteText !== '';
     } else if (modalMode === 'edit') {
         hasUnsavedChanges = currentNoteText !== originalNoteText;
+    } else if (modalMode === 'reply') {
+        hasUnsavedChanges = currentNoteText !== '';
     }
 
     if (hasUnsavedChanges) {
@@ -133,7 +174,13 @@ function closeModal() {
         modal.classList.add('hidden');
         modalMode = 'create';
         editingNote = null;
+        replyingToNote = null;
+        replyingToNoteId = null;
         originalNoteText = '';
+        // Hide reply preview
+        const replyPreview = document.getElementById('reply-preview');
+        replyPreview.classList.add('hidden');
+        replyPreview.textContent = '';
     }
 }
 
@@ -154,7 +201,13 @@ confirmDiscardBtn.addEventListener('click', () => {
     modal.classList.add('hidden');
     modalMode = 'create';
     editingNote = null;
+    replyingToNote = null;
+    replyingToNoteId = null;
     originalNoteText = '';
+    // Hide reply preview
+    const replyPreview = document.getElementById('reply-preview');
+    replyPreview.classList.add('hidden');
+    replyPreview.textContent = '';
 });
 
 // Prevent context menu from closing when clicking on it
@@ -188,9 +241,40 @@ document.getElementById('edit-note').addEventListener('click', () => {
         modalTitle.textContent = 'Edit Note';
         postBtn.textContent = 'Save';
         modal.classList.remove('hidden');
+        // Hide reply preview if visible
+        const replyPreview = document.getElementById('reply-preview');
+        replyPreview.classList.add('hidden');
+        replyPreview.textContent = '';
         contextMenu.style.display = 'none'; // Hide the context menu
     }
 });
+
+// Reply to the selected note when clicking the "Reply" option in the context menu
+replyNoteOption.addEventListener('click', () => {
+    if (selectedNote) {
+        modalMode = 'reply';
+        replyingToNote = selectedNote;
+        replyingToNoteId = selectedNote.id; // Store the id
+        originalNoteText = '';
+        noteInput.value = '';
+        // Get the text of the note we're replying to
+        const replyToText = selectedNote.querySelector('.note-text').textContent;
+        // Show the reply preview in the modal
+        showReplyPreview(replyToText);
+        modalTitle.textContent = 'Reply to Note';
+        postBtn.textContent = 'Post';
+        modal.classList.remove('hidden');
+        contextMenu.style.display = 'none'; // Hide the context menu
+    }
+});
+
+// Function to show the reply preview in the modal
+function showReplyPreview(text) {
+    const replyPreview = document.getElementById('reply-preview');
+    const shortenedText = text.length > 100 ? text.substring(0, 100) + '...' : text;
+    replyPreview.textContent = shortenedText;
+    replyPreview.classList.remove('hidden');
+}
 
 // Theme toggle functionality
 themeToggle.addEventListener('click', () => {
