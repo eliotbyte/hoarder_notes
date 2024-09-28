@@ -69,15 +69,38 @@ function createNote(text, replyToNote = null, replyToNoteId = null) {
     noteDiv.classList.add('note-text');
     noteDiv.textContent = text;
 
+    // Append noteText to newNote
+    newNote.appendChild(noteDiv);
+
+    // Create note-bottom div
+    const noteBottomDiv = document.createElement('div');
+    noteBottomDiv.classList.add('note-bottom');
+
+    // Create note-buttons div
+    const noteButtonsDiv = document.createElement('div');
+    noteButtonsDiv.classList.add('note-buttons');
+
+    // Create reply icon
+    const replyIcon = document.createElement('img');
+    replyIcon.src = 'https://www.svgrepo.com/download/514218/reply.svg';
+    replyIcon.alt = 'Reply Icon';
+    replyIcon.classList.add('reply-icon', 'w-5', 'h-5', 'cursor-pointer', 'icon-filter');
+
+    // Append reply icon to note-buttons
+    noteButtonsDiv.appendChild(replyIcon);
+
     // Create time div
     const timeDiv = document.createElement('div');
     timeDiv.classList.add('note-time');
     const currentTime = new Date().toUTCString();
     timeDiv.textContent = currentTime;
 
-    // Append noteText and timeDiv to newNote
-    newNote.appendChild(noteDiv);
-    newNote.appendChild(timeDiv);
+    // Append note-buttons and note-time to note-bottom
+    noteBottomDiv.appendChild(noteButtonsDiv);
+    noteBottomDiv.appendChild(timeDiv);
+
+    // Append note-bottom to newNote
+    newNote.appendChild(noteBottomDiv);
 
     // Append new note to notes container
     notesContainer.appendChild(newNote);
@@ -85,7 +108,32 @@ function createNote(text, replyToNote = null, replyToNoteId = null) {
     // Add context menu functionality to the new note
     newNote.addEventListener('contextmenu', noteContextMenuHandler);
 
+    // Add event listener to reply icon
+    replyIcon.addEventListener('click', () => {
+        handleReplyClick(newNote);
+    });
+
     return newNote;
+}
+
+// Function to handle reply icon click
+function handleReplyClick(note) {
+    if (note) {
+        modalMode = 'reply';
+        replyingToNote = note;
+        replyingToNoteId = note.id; // Store the id
+        originalNoteText = '';
+        noteInput.value = '';
+        // Get the text of the note we're replying to
+        const replyToText = note.querySelector('.note-text').textContent;
+        // Store the reply text content
+        replyPreviewTextContent = replyToText;
+        // Show the reply preview in the modal
+        showReplyPreview(replyToText);
+        modalTitle.textContent = 'Reply to Note';
+        postBtn.textContent = 'Post';
+        modal.classList.remove('hidden');
+    }
 }
 
 // Function to edit a note
@@ -341,20 +389,7 @@ document.getElementById('edit-note').addEventListener('click', () => {
 // Reply to the selected note when clicking the "Reply" option in the context menu
 replyNoteOption.addEventListener('click', () => {
     if (selectedNote) {
-        modalMode = 'reply';
-        replyingToNote = selectedNote;
-        replyingToNoteId = selectedNote.id; // Store the id
-        originalNoteText = '';
-        noteInput.value = '';
-        // Get the text of the note we're replying to
-        const replyToText = selectedNote.querySelector('.note-text').textContent;
-        // Store the reply text content
-        replyPreviewTextContent = replyToText;
-        // Show the reply preview in the modal
-        showReplyPreview(replyToText);
-        modalTitle.textContent = 'Reply to Note';
-        postBtn.textContent = 'Post';
-        modal.classList.remove('hidden');
+        handleReplyClick(selectedNote);
         contextMenu.style.display = 'none'; // Hide the context menu
     }
 });
