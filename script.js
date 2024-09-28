@@ -86,8 +86,14 @@ function createNote(text, replyToNote = null, replyToNoteId = null) {
     replyIcon.alt = 'Reply Icon';
     replyIcon.classList.add('reply-icon', 'w-5', 'h-5', 'cursor-pointer', 'icon-filter');
 
-    // Append reply icon to note-buttons
+    // Create reply count (placeholder number)
+    const replyCount = document.createElement('span');
+    replyCount.textContent = '3'; // Placeholder number
+    replyCount.classList.add('reply-count');
+
+    // Append reply icon and reply count to note-buttons
     noteButtonsDiv.appendChild(replyIcon);
+    noteButtonsDiv.appendChild(replyCount);
 
     // Create time div
     const timeDiv = document.createElement('div');

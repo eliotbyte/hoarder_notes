@@ -149,7 +149,13 @@ body {
 }
 
 .note-buttons img {
-    margin-right: 8px;
+    margin-right: 4px;
+}
+
+.reply-count {
+    font-size: 14px;
+    color: var(--text-color);
+    margin-left: 4px;
 }
 
 .note-time {
