@@ -100,7 +100,9 @@ function createTagElement(text) {
     removeIcon.alt = 'Remove Tag';
     removeIcon.classList.add('tag-remove');
 
-    removeIcon.addEventListener('click', () => {
+    // Prevent event bubbling to the tag click event
+    removeIcon.addEventListener('click', (event) => {
+        event.stopPropagation();
         const index = state.tags.indexOf(text);
         if (index > -1) {
             state.tags.splice(index, 1);
@@ -131,15 +133,11 @@ function handleTagsInput(event) {
     if (event.key === ' ' || event.key === 'Enter') {
         event.preventDefault();
         if (inputValue !== '') {
-            if (/^[a-zA-Z0-9]+$/.test(inputValue)) {
-                if (!state.tags.includes(inputValue)) {
-                    const tagElement = createTagElement(inputValue);
-                    noteTagsInputContainer.insertBefore(tagElement, noteTagsInput);
-                    state.tags.push(inputValue);
-                    noteTagsInput.value = '';
-                }
-            } else {
-                alert('Tags can only contain letters and numbers.');
+            if (!state.tags.includes(inputValue)) {
+                const tagElement = createTagElement(inputValue);
+                noteTagsInputContainer.insertBefore(tagElement, noteTagsInput);
+                state.tags.push(inputValue);
+                noteTagsInput.value = '';
             }
         }
     }

@@ -29,6 +29,7 @@ function createNote(text, tags = [], replyToNote = null, replyToNoteId = null) {
         const replyPreviewLink = document.createElement('a');
         replyPreviewLink.href = 'note?id=' + replyToNoteId;
         replyPreviewLink.classList.add('reply-preview-in-note', 'bg-background', 'text-textColor', 'rounded-md', 'p-2', 'mb-2', 'block');
+        replyPreviewLink.style.userSelect = 'none';
 
         let replyToText = '';
 
@@ -59,10 +60,12 @@ function createNote(text, tags = [], replyToNote = null, replyToNoteId = null) {
         tagsDiv.classList.add('note-tags');
 
         tags.forEach(tagText => {
-            const tagSpan = document.createElement('div');
-            tagSpan.classList.add('note-tag');
-            tagSpan.textContent = tagText;
-            tagsDiv.appendChild(tagSpan);
+            const tagLink = document.createElement('a');
+            tagLink.href = '#';
+            tagLink.classList.add('note-tag');
+            tagLink.textContent = tagText;
+            tagLink.style.userSelect = 'none';
+            tagsDiv.appendChild(tagLink);
         });
 
         newNote.appendChild(tagsDiv);
@@ -78,6 +81,7 @@ function createNote(text, tags = [], replyToNote = null, replyToNoteId = null) {
     replyIcon.src = 'https://www.svgrepo.com/download/514218/reply.svg';
     replyIcon.alt = 'Reply Icon';
     replyIcon.classList.add('reply-icon', 'w-5', 'h-5', 'cursor-pointer', 'icon-filter');
+    replyIcon.style.userSelect = 'none';
 
     const replyCount = document.createElement('span');
     replyCount.textContent = '3'; // Placeholder number
@@ -158,7 +162,9 @@ function createTagElement(text) {
     removeIcon.alt = 'Remove Tag';
     removeIcon.classList.add('tag-remove');
 
-    removeIcon.addEventListener('click', () => {
+    // Prevent event bubbling to the tag click event
+    removeIcon.addEventListener('click', (event) => {
+        event.stopPropagation();
         const index = state.tags.indexOf(text);
         if (index > -1) {
             state.tags.splice(index, 1);
@@ -203,10 +209,12 @@ function editNote(noteElement, newText, newTags = []) {
 
     if (newTags.length > 0) {
         newTags.forEach(tagText => {
-            const tagSpan = document.createElement('div');
-            tagSpan.classList.add('note-tag');
-            tagSpan.textContent = tagText;
-            tagsDiv.appendChild(tagSpan);
+            const tagLink = document.createElement('a');
+            tagLink.href = '#';
+            tagLink.classList.add('note-tag');
+            tagLink.textContent = tagText;
+            tagLink.style.userSelect = 'none';
+            tagsDiv.appendChild(tagLink);
         });
     } else if (tagsDiv) {
         tagsDiv.remove();
@@ -224,6 +232,7 @@ function editNote(noteElement, newText, newTags = []) {
             replyPreviewInNote = document.createElement('a');
             replyPreviewInNote.href = 'note?id=' + state.replyingToNoteId;
             replyPreviewInNote.classList.add('reply-preview-in-note', 'bg-background', 'text-textColor', 'rounded-md', 'p-2', 'mb-2', 'block');
+            replyPreviewInNote.style.userSelect = 'none';
 
             const replyTextSpan = document.createElement('span');
             replyTextSpan.textContent = state.replyPreviewTextContent;

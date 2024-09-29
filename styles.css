@@ -48,9 +48,23 @@
     filter: var(--icon-filter);
 }
 
-/* Set default fonts */
+/* Disable text selection globally */
 body {
     font-family: 'Inter', sans-serif;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Allow text selection in specific elements */
+.note-text,
+.note-input,
+.reply-preview-text,
+.reply-preview-in-note span,
+.modal-content textarea {
+    -webkit-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
 }
 
 .jakarta-semibold {
@@ -95,6 +109,10 @@ body {
     align-items: center;
 }
 
+.header-container * {
+    user-select: none;
+}
+
 .content-spacing {
     margin-top: 80px;
     padding-bottom: 49px;
@@ -117,6 +135,7 @@ body {
     cursor: pointer;
     border-radius: 6px;
     color: var(--text-color);
+    user-select: none;
 }
 
 .context-menu div:hover {
@@ -143,7 +162,6 @@ body {
     white-space: pre-wrap;
 }
 
-/* Added styles for note-tags */
 .note-tags {
     font-size: 16px;
     color: var(--text-color);
@@ -160,10 +178,19 @@ body {
     margin-right: 4px;
     margin-bottom: 4px;
     font-size: 14px;
+    text-decoration: none;
 }
 
 .note-tag:hover {
     background-color: var(--tag-hover-background-color);
+}
+
+.note-tag:active {
+    opacity: 0.8;
+}
+
+.note-tag * {
+    user-select: none;
 }
 
 .note-bottom {
@@ -205,6 +232,10 @@ body {
     box-shadow: 0 4px 8px rgba(0,0,0,0.25);
 }
 
+.modal-content * {
+    user-select: none;
+}
+
 .note-input {
     padding: 8px;
     width: 100%;
@@ -213,6 +244,7 @@ body {
     border: 1px solid #ccc;
     background-color: var(--note-background-color);
     color: var(--text-color);
+    user-select: text;
 }
 
 /* Note tags input styles */
@@ -223,6 +255,8 @@ body {
     border: 1px solid #ccc;
     padding: 4px;
     border-radius: 10px;
+    margin-top: 8px;
+    background-color: var(--note-background-color);
 }
 
 .note-tags-input {
@@ -231,6 +265,7 @@ body {
     background-color: transparent;
     color: var(--text-color);
     min-width: 100px;
+    user-select: text;
 }
 
 .note-tags-input:focus {
@@ -247,6 +282,7 @@ body {
     margin-bottom: 4px;
     display: flex;
     align-items: center;
+    user-select: none;
 }
 
 .tag:hover {
@@ -275,6 +311,7 @@ body {
     color: var(--text-color);
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+    user-select: none;
 }
 
 /* Reply preview styles */
@@ -298,6 +335,11 @@ body {
 .reply-preview-in-note {
     width: calc(100% - 32px);
     margin-bottom: 16px;
+    text-decoration: none;
+}
+
+.reply-preview-in-note * {
+    user-select: none;
 }
 
 /* Adjust hover effect for reply previews */
