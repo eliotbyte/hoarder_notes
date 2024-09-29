@@ -11,6 +11,10 @@
     --hover-background-color: #dcdcdc;
     --border-color: #ddd;
     --reply-preview-background: #e0e0e0;
+    /* Added variables for tags */
+    --tag-background-color: #d9e1f2;
+    --tag-text-color: #333333;
+    --tag-hover-background-color: #c5d1e8;
 }
 
 .dark {
@@ -21,6 +25,10 @@
     --hover-background-color: #333333;
     --border-color: #555;
     --reply-preview-background: #333333;
+    /* Added variables for tags in dark mode */
+    --tag-background-color: #2e3b4e;
+    --tag-text-color: #E5E5E5;
+    --tag-hover-background-color: #3a4b63;
 }
 
 /* Apply the CSS variables */
@@ -135,6 +143,29 @@ body {
     white-space: pre-wrap;
 }
 
+/* Added styles for note-tags */
+.note-tags {
+    font-size: 16px;
+    color: var(--text-color);
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.note-tag {
+    background-color: var(--tag-background-color);
+    color: var(--tag-text-color);
+    padding: 4px 8px;
+    border-radius: 6px;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.note-tag:hover {
+    background-color: var(--tag-hover-background-color);
+}
+
 .note-bottom {
     display: flex;
     justify-content: space-between;
@@ -182,6 +213,56 @@ body {
     border: 1px solid #ccc;
     background-color: var(--note-background-color);
     color: var(--text-color);
+}
+
+/* Note tags input styles */
+.note-tags-input-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    border: 1px solid #ccc;
+    padding: 4px;
+    border-radius: 10px;
+}
+
+.note-tags-input {
+    flex-grow: 1;
+    border: none;
+    background-color: transparent;
+    color: var(--text-color);
+    min-width: 100px;
+}
+
+.note-tags-input:focus {
+    outline: none;
+}
+
+/* Styles for tags in the input field */
+.tag {
+    background-color: var(--tag-background-color);
+    color: var(--tag-text-color);
+    padding: 4px 8px;
+    border-radius: 6px;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+}
+
+.tag:hover {
+    background-color: var(--tag-hover-background-color);
+    cursor: pointer;
+}
+
+.tag-text {
+    margin-right: 4px;
+    font-size: 14px;
+}
+
+.tag-remove {
+    width: 12px;
+    height: 12px;
+    cursor: pointer;
 }
 
 /* Confirmation modal content */

@@ -7,6 +7,8 @@ import { removeReply, showReplyPreview } from './modal.js';
 const plusIcon = document.getElementById('plus-icon');
 const postBtn = document.getElementById('post-btn');
 const noteInput = document.getElementById('note-input');
+const noteTagsInputContainer = document.getElementById('note-tags-input-container');
+const noteTagsInput = document.getElementById('note-tags-input');
 const notesContainer = document.getElementById('notes');
 const modalTitle = document.getElementById('modal-title');
 const modal = document.getElementById('modal');
@@ -17,7 +19,7 @@ const replyPreviewText = document.getElementById('reply-preview-text');
 const contextMenu = document.getElementById('context-menu');
 
 // Function to create a note
-function createNote(text, replyToNote = null, replyToNoteId = null) {
+function createNote(text, tags = [], replyToNote = null, replyToNoteId = null) {
     const newNote = document.createElement('div');
     newNote.classList.add('note', 'bg-noteBackground', 'text-textColor');
     newNote.id = 'note-' + Date.now(); // Assign a unique ID
@@ -50,6 +52,21 @@ function createNote(text, replyToNote = null, replyToNoteId = null) {
     noteDiv.textContent = text;
 
     newNote.appendChild(noteDiv);
+
+    // Add tags to the note
+    if (tags.length > 0) {
+        const tagsDiv = document.createElement('div');
+        tagsDiv.classList.add('note-tags');
+
+        tags.forEach(tagText => {
+            const tagSpan = document.createElement('div');
+            tagSpan.classList.add('note-tag');
+            tagSpan.textContent = tagText;
+            tagsDiv.appendChild(tagSpan);
+        });
+
+        newNote.appendChild(tagsDiv);
+    }
 
     const noteBottomDiv = document.createElement('div');
     noteBottomDiv.classList.add('note-bottom');
@@ -98,6 +115,8 @@ function handleReplyClick(note) {
         state.replyingToNoteId = note.id;
         state.originalNoteText = '';
         noteInput.value = '';
+        state.tags = [];
+        clearTags();
 
         const replyToText = note.querySelector('.note-text').textContent;
         state.replyPreviewTextContent = replyToText;
@@ -109,14 +128,89 @@ function handleReplyClick(note) {
     }
 }
 
+// Function to clear tags in the modal
+function clearTags() {
+    const tags = noteTagsInputContainer.querySelectorAll('.tag');
+    tags.forEach(tag => tag.remove());
+    noteTagsInput.value = '';
+}
+
+// Function to populate tags in the modal when editing
+function populateTags(tags) {
+    clearTags();
+    tags.forEach(tagText => {
+        const tagElement = createTagElement(tagText);
+        noteTagsInputContainer.insertBefore(tagElement, noteTagsInput);
+    });
+}
+
+// Function to create a tag element (same as in modal.js)
+function createTagElement(text) {
+    const tag = document.createElement('div');
+    tag.classList.add('tag');
+
+    const tagText = document.createElement('span');
+    tagText.classList.add('tag-text');
+    tagText.textContent = text;
+
+    const removeIcon = document.createElement('img');
+    removeIcon.src = 'https://www.svgrepo.com/download/509072/cross.svg';
+    removeIcon.alt = 'Remove Tag';
+    removeIcon.classList.add('tag-remove');
+
+    removeIcon.addEventListener('click', () => {
+        const index = state.tags.indexOf(text);
+        if (index > -1) {
+            state.tags.splice(index, 1);
+        }
+        tag.remove();
+    });
+
+    tag.addEventListener('click', () => {
+        noteTagsInput.value = text;
+        const index = state.tags.indexOf(text);
+        if (index > -1) {
+            state.tags.splice(index, 1);
+        }
+        tag.remove();
+        noteTagsInput.focus();
+    });
+
+    tag.appendChild(tagText);
+    tag.appendChild(removeIcon);
+
+    return tag;
+}
+
 // Function to edit a note
-function editNote(noteElement, newText) {
+function editNote(noteElement, newText, newTags = []) {
     const noteDiv = noteElement.querySelector('.note-text');
     noteDiv.textContent = newText;
 
     const timeDiv = noteElement.querySelector('.note-time');
     const currentTime = new Date().toUTCString();
     timeDiv.textContent = currentTime;
+
+    // Update tags
+    let tagsDiv = noteElement.querySelector('.note-tags');
+    if (tagsDiv) {
+        tagsDiv.innerHTML = '';
+    } else if (newTags.length > 0) {
+        tagsDiv = document.createElement('div');
+        tagsDiv.classList.add('note-tags');
+        noteElement.insertBefore(tagsDiv, noteElement.querySelector('.note-bottom'));
+    }
+
+    if (newTags.length > 0) {
+        newTags.forEach(tagText => {
+            const tagSpan = document.createElement('div');
+            tagSpan.classList.add('note-tag');
+            tagSpan.textContent = tagText;
+            tagsDiv.appendChild(tagSpan);
+        });
+    } else if (tagsDiv) {
+        tagsDiv.remove();
+    }
 
     if (!state.replyingToNoteId) {
         const replyPreviewInNote = noteElement.querySelector('.reply-preview-in-note');
@@ -157,7 +251,10 @@ function setupNoteEventListeners() {
         state.replyingToNote = null;
         state.replyingToNoteId = null;
         state.originalNoteText = '';
+        state.originalNoteTags = [];
+        state.tags = [];
         noteInput.value = '';
+        clearTags();
         modalTitle.textContent = 'Create Note';
         postBtn.textContent = 'Post';
         removeReply();
@@ -166,24 +263,21 @@ function setupNoteEventListeners() {
 
     postBtn.addEventListener('click', () => {
         const noteText = noteInput.value.trim();
+        const tags = state.tags;
 
         if (noteText) {
             if (state.modalMode === 'create') {
-                createNote(noteText);
+                createNote(noteText, tags);
             } else if (state.modalMode === 'edit' && state.editingNote) {
-                editNote(state.editingNote, noteText);
+                editNote(state.editingNote, noteText, tags);
                 state.editingNote = null;
             } else if (state.modalMode === 'reply') {
-                createNote(noteText, state.replyingToNote, state.replyingToNoteId);
+                createNote(noteText, tags, state.replyingToNote, state.replyingToNoteId);
                 state.replyingToNote = null;
                 state.replyingToNoteId = null;
             }
 
-            noteInput.value = '';
-            modal.classList.add('hidden');
-            state.modalMode = 'create';
-            state.originalNoteText = '';
-            removeReply();
+            resetModal();
         }
     });
 
@@ -215,6 +309,16 @@ function setupNoteEventListeners() {
             state.originalNoteText = state.selectedNote.querySelector('.note-text').textContent;
             noteInput.value = state.originalNoteText;
 
+            // Get tags from the note
+            const tagsDiv = state.selectedNote.querySelector('.note-tags');
+            if (tagsDiv) {
+                state.originalNoteTags = Array.from(tagsDiv.querySelectorAll('.note-tag')).map(tag => tag.textContent);
+            } else {
+                state.originalNoteTags = [];
+            }
+            state.tags = [...state.originalNoteTags];
+            populateTags(state.tags);
+
             const replyPreviewInNote = state.selectedNote.querySelector('.reply-preview-in-note');
             if (replyPreviewInNote) {
                 const replyToText = replyPreviewInNote.textContent;
@@ -241,6 +345,18 @@ function setupNoteEventListeners() {
     existingNotes.forEach(note => {
         note.addEventListener('contextmenu', noteContextMenuHandler);
     });
+}
+
+// Function to reset the modal
+function resetModal() {
+    noteInput.value = '';
+    modal.classList.add('hidden');
+    state.modalMode = 'create';
+    state.originalNoteText = '';
+    state.originalNoteTags = [];
+    state.tags = [];
+    clearTags();
+    removeReply();
 }
 
 export { setupNoteEventListeners };
