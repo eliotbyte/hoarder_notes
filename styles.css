@@ -15,6 +15,8 @@
     --tag-background-color: #d9e1f2;
     --tag-text-color: #333333;
     --tag-hover-background-color: #c5d1e8;
+    /* Added variable for selected note background */
+    --selected-note-background: #a1c4fd; /* Light blue */
 }
 
 .dark {
@@ -29,6 +31,8 @@
     --tag-background-color: #2e3b4e;
     --tag-text-color: #E5E5E5;
     --tag-hover-background-color: #3a4b63;
+    /* Selected note background in dark mode */
+    --selected-note-background: #3a4b63; /* Darker blue */
 }
 
 /* Apply the CSS variables */
@@ -155,6 +159,10 @@ body {
     margin-bottom: 24px;
 }
 
+.note.selected-note {
+    background-color: var(--selected-note-background);
+}
+
 .note-text {
     font-size: 20px;
     color: var(--text-color);
@@ -207,13 +215,13 @@ body {
 }
 
 .note-buttons img {
-    margin-right: 4px;
+    /* Removed margin-right */
 }
 
 .reply-count {
     font-size: 14px;
     color: var(--text-color);
-    margin-left: 4px;
+    /* Removed margin-left */
 }
 
 .note-time {
@@ -345,4 +353,9 @@ body {
 /* Adjust hover effect for reply previews */
 .reply-preview-in-note:hover {
     background-color: var(--hover-background-color);
+}
+
+/* Disable text selection on notes when in selection mode */
+.disable-text-selection .note {
+    user-select: none;
 }

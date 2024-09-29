@@ -17,7 +17,8 @@
 <body class="bg-background text-textColor">
     <!-- Header (Fixed) -->
     <div class="fixed-header">
-        <div class="header-container">
+        <!-- Normal Header -->
+        <div id="normal-header" class="header-container">
             <!-- Logo text -->
             <div class="jakarta-semibold text-[32px] text-textColor">
                 ZAEBEAST
@@ -28,6 +29,18 @@
                 <img id="plus-icon" src="https://www.svgrepo.com/download/491467/plus.svg" alt="Plus Icon" class="w-6 h-6 cursor-pointer icon-filter">
                 <!-- Theme Toggle Icon -->
                 <img id="theme-toggle" src="https://www.svgrepo.com/download/487620/night.svg" alt="Theme Toggle Icon" class="w-6 h-6 cursor-pointer icon-filter">
+            </div>
+        </div>
+        <!-- Selection Header (Hidden by default) -->
+        <div id="selection-header" class="header-container hidden">
+            <!-- Selected Notes Count -->
+            <div id="selected-count" class="jakarta-semibold text-[24px] text-textColor">
+                0 selected
+            </div>
+            <!-- Buttons -->
+            <div class="flex space-x-4 items-center">
+                <button id="delete-selected" class="bg-red-500 text-white px-4 py-2 rounded-md">Delete</button>
+                <button id="cancel-selection" class="bg-gray-500 text-white px-4 py-2 rounded-md">Cancel</button>
             </div>
         </div>
     </div>

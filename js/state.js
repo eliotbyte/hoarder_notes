@@ -5,11 +5,16 @@ const state = {
     modalMode: 'create', // 'create', 'edit', or 'reply'
     editingNote: null,
     originalNoteText: '',
-    originalNoteTags: [], // Added to store original tags when editing
+    originalNoteTags: [],
     replyingToNote: null,
     replyingToNoteId: null,
     replyPreviewTextContent: '',
-    tags: [] // Added to store tags in the modal
+    tags: [],
+    // Added for selection mode
+    selectionMode: false,
+    selectedNotes: [],
+    selectionAction: null, // 'select' or 'deselect'
+    selectionDragActive: false // Flag to indicate if drag selection is active
 };
 
 export { state };

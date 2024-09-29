@@ -17,6 +17,17 @@ const removeReplyIcon = document.getElementById('remove-reply-icon');
 const replyPreview = document.getElementById('reply-preview');
 const replyPreviewText = document.getElementById('reply-preview-text');
 const contextMenu = document.getElementById('context-menu');
+const normalHeader = document.getElementById('normal-header');
+const selectionHeader = document.getElementById('selection-header');
+const selectedCount = document.getElementById('selected-count');
+const deleteSelectedBtn = document.getElementById('delete-selected');
+const cancelSelectionBtn = document.getElementById('cancel-selection');
+
+// Variables for selection logic
+let isMouseDown = false;
+let mouseDownTimeout = null;
+let startX = 0;
+let startY = 0;
 
 // Function to create a note
 function createNote(text, tags = [], replyToNote = null, replyToNoteId = null) {
@@ -102,10 +113,89 @@ function createNote(text, tags = [], replyToNote = null, replyToNoteId = null) {
 
     notesContainer.appendChild(newNote);
 
+    // Event listeners for note
     newNote.addEventListener('contextmenu', noteContextMenuHandler);
 
-    replyIcon.addEventListener('click', () => {
-        handleReplyClick(newNote);
+    replyIcon.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (!state.selectionMode) {
+            handleReplyClick(newNote);
+        }
+    });
+
+    // Selection event listeners
+    newNote.addEventListener('mousedown', (event) => {
+        if (event.button !== 0) return; // Only respond to left mouse button
+        isMouseDown = true;
+        startX = event.clientX;
+        startY = event.clientY;
+        state.selectionDragActive = false;
+
+        mouseDownTimeout = setTimeout(() => {
+            enterSelectionMode();
+
+            if (state.selectedNotes.includes(newNote)) {
+                state.selectionAction = 'deselect';
+            } else {
+                state.selectionAction = 'select';
+            }
+            applySelectionAction(newNote);
+        }, 200); // Reduced timeout to 200ms as per your request
+    });
+
+    newNote.addEventListener('mousemove', (event) => {
+        if (isMouseDown) {
+            const deltaX = Math.abs(event.clientX - startX);
+            const deltaY = Math.abs(event.clientY - startY);
+            if (deltaX > 5 || deltaY > 5) {
+                state.selectionDragActive = true;
+            }
+
+            if (state.selectionMode && state.selectionAction) {
+                const elementUnderCursor = document.elementFromPoint(event.clientX, event.clientY);
+                if (elementUnderCursor) {
+                    const noteElement = elementUnderCursor.closest('.note');
+                    if (noteElement && notesContainer.contains(noteElement)) {
+                        applySelectionAction(noteElement);
+                    }
+                }
+                // Prevent text selection during drag selection
+                event.preventDefault();
+            }
+        }
+    });
+
+    newNote.addEventListener('mouseup', (event) => {
+        if (event.button !== 0) return;
+        isMouseDown = false;
+        clearTimeout(mouseDownTimeout);
+
+        // Do not toggle selection on click if drag selection was active
+        if (state.selectionMode && state.selectionDragActive) {
+            state.selectionDragActive = false;
+            state.selectionAction = null;
+            event.preventDefault();
+            return;
+        }
+
+        state.selectionAction = null;
+    });
+
+    newNote.addEventListener('click', (event) => {
+        if (state.selectionMode) {
+            if (state.selectionDragActive) {
+                // If drag selection was active, prevent click action
+                state.selectionDragActive = false;
+                event.preventDefault();
+                return;
+            }
+            if (state.selectedNotes.includes(newNote)) {
+                deselectNote(newNote);
+            } else {
+                selectNote(newNote);
+            }
+            event.preventDefault();
+        }
     });
 
     return newNote;
@@ -246,10 +336,71 @@ function editNote(noteElement, newText, newTags = []) {
 // Function to handle note context menu
 function noteContextMenuHandler(event) {
     event.preventDefault();
-    state.selectedNote = this;
-    contextMenu.style.top = `${event.pageY}px`;
-    contextMenu.style.left = `${event.pageX}px`;
-    contextMenu.style.display = 'block';
+    if (!state.selectionMode) {
+        state.selectedNote = this;
+        contextMenu.style.top = `${event.pageY}px`;
+        contextMenu.style.left = `${event.pageX}px`;
+        contextMenu.style.display = 'block';
+    }
+}
+
+// Function to enter selection mode
+function enterSelectionMode() {
+    if (!state.selectionMode) {
+        state.selectionMode = true;
+        normalHeader.classList.add('hidden');
+        selectionHeader.classList.remove('hidden');
+        // Clear any text selection
+        window.getSelection().removeAllRanges();
+        // Add class to notes to disable text selection
+        notesContainer.classList.add('disable-text-selection');
+    }
+}
+
+// Function to exit selection mode
+function exitSelectionMode() {
+    state.selectionMode = false;
+    normalHeader.classList.remove('hidden');
+    selectionHeader.classList.add('hidden');
+    state.selectedNotes.forEach(note => {
+        note.classList.remove('selected-note');
+    });
+    state.selectedNotes = [];
+    updateSelectedCount();
+    // Remove class to enable text selection
+    notesContainer.classList.remove('disable-text-selection');
+}
+
+// Function to select a note
+function selectNote(note) {
+    if (!state.selectedNotes.includes(note)) {
+        note.classList.add('selected-note');
+        state.selectedNotes.push(note);
+        updateSelectedCount();
+    }
+}
+
+// Function to deselect a note
+function deselectNote(note) {
+    if (state.selectedNotes.includes(note)) {
+        note.classList.remove('selected-note');
+        state.selectedNotes = state.selectedNotes.filter(n => n !== note);
+        updateSelectedCount();
+    }
+}
+
+// Function to apply selection action
+function applySelectionAction(note) {
+    if (state.selectionAction === 'select') {
+        selectNote(note);
+    } else if (state.selectionAction === 'deselect') {
+        deselectNote(note);
+    }
+}
+
+// Function to update the selected notes count
+function updateSelectedCount() {
+    selectedCount.textContent = `${state.selectedNotes.length} selected`;
 }
 
 // Event listeners
@@ -305,6 +456,8 @@ function setupNoteEventListeners() {
 
     document.getElementById('delete-note').addEventListener('click', () => {
         if (state.selectedNote) {
+            // Placeholder for API call to delete note
+            // After successful deletion, remove the note from the DOM
             state.selectedNote.remove();
             state.selectedNote = null;
             contextMenu.style.display = 'none';
@@ -353,6 +506,35 @@ function setupNoteEventListeners() {
     const existingNotes = document.querySelectorAll('.note');
     existingNotes.forEach(note => {
         note.addEventListener('contextmenu', noteContextMenuHandler);
+    });
+
+    // Event listeners for selection header buttons
+    deleteSelectedBtn.addEventListener('click', () => {
+        // Placeholder for API call to delete selected notes
+        // After successful deletion, remove the notes from the DOM
+        state.selectedNotes.forEach(note => {
+            note.remove();
+        });
+        exitSelectionMode();
+    });
+
+    cancelSelectionBtn.addEventListener('click', () => {
+        exitSelectionMode();
+    });
+
+    // Global mouseup event listener to reset isMouseDown
+    document.addEventListener('mouseup', () => {
+        isMouseDown = false;
+        clearTimeout(mouseDownTimeout);
+        state.selectionAction = null;
+        state.selectionDragActive = false;
+    });
+
+    // Disable text selection during selection mode
+    document.addEventListener('selectionchange', () => {
+        if (state.selectionMode) {
+            window.getSelection().removeAllRanges();
+        }
     });
 }
 
