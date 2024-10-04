@@ -28,9 +28,9 @@
     --border-color: #555;
     --reply-preview-background: #333333;
     /* Added variables for tags in dark mode */
-    --tag-background-color: #2e3b4e;
+    --tag-background-color: #465367;
     --tag-text-color: #E5E5E5;
-    --tag-hover-background-color: #3a4b63;
+    --tag-hover-background-color: #4b596c;
     /* Selected note background in dark mode */
     --selected-note-background: #3a4b63; /* Darker blue */
 }
