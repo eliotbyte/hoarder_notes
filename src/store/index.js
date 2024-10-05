@@ -7,7 +7,7 @@ export default createStore({
   state: {
     notes: [],
     selectedNotes: [],
-    selectionMode: false,
+    selectionMode: false, // Track selection mode
     token: localStorage.getItem('token') || null,
   },
   mutations: {
@@ -40,7 +40,7 @@ export default createStore({
           page: page || 1,
           pageSize: 10,
         }
-    
+
         const notes = await api.getNotes(params)
         if (append) {
           commit('appendNotes', notes)
@@ -49,8 +49,11 @@ export default createStore({
         }
         return notes
       } catch (error) {
-        console.error('Error fetching notes:', error)
-        throw error // It's good practice to re-throw the error after logging
+        // Check if the error is not handled (i.e., not a 401)
+        if (error.response && error.response.status !== 401) {
+          console.error('Error fetching notes:', error)
+        }
+        // Do not rethrow the error to prevent further handling
       }
     },
     async login({ commit, dispatch }, credentials) {
@@ -59,10 +62,14 @@ export default createStore({
         const token = data.token
         commit('setToken', token)
         // After successful authentication, load notes
-        dispatch('fetchNotes')
+        await dispatch('fetchNotes')
       } catch (error) {
-        console.error('Login error:', error)
-        throw error
+        if (error.response && error.response.status === 401) {
+          // Optionally, handle unauthorized login attempts here
+        } else {
+          console.error('Login error:', error)
+        }
+        throw error // Re-throw other errors to be handled elsewhere if needed
       }
     },
     logout({ commit }) {
@@ -71,25 +78,34 @@ export default createStore({
     async createNote({ dispatch }, noteData) {
       try {
         await api.createNote(noteData)
-        dispatch('fetchNotes') // Refresh notes list
+        await dispatch('fetchNotes')
       } catch (error) {
-        console.error('Error creating note:', error)
+        if (error.response && error.response.status !== 401) {
+          console.error('Error creating note:', error)
+        }
+        // Do not rethrow the error
       }
     },
     async updateNote({ dispatch }, noteData) {
       try {
         await api.updateNote(noteData)
-        dispatch('fetchNotes') // Refresh notes list
+        await dispatch('fetchNotes')
       } catch (error) {
-        console.error('Error updating note:', error)
+        if (error.response && error.response.status !== 401) {
+          console.error('Error updating note:', error)
+        }
+        // Do not rethrow the error
       }
     },
     async deleteNote({ dispatch }, noteId) {
       try {
         await api.deleteNote(noteId)
-        dispatch('fetchNotes') // Refresh notes list
+        await dispatch('fetchNotes')
       } catch (error) {
-        console.error('Error deleting note:', error)
+        if (error.response && error.response.status !== 401) {
+          console.error('Error deleting note:', error)
+        }
+        // Do not rethrow the error
       }
     },
   },
