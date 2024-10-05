@@ -8,6 +8,7 @@
     @mouseup="handleMouseUp"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
+    @contextmenu="handleContextMenu"
   >
     <div
       v-if="note.parentId"
@@ -237,6 +238,13 @@ export default {
         }
         this.toggleSelection() // Apply action to the initial note
       }
+    },
+    handleContextMenu(event) {
+      event.preventDefault() // Disable the standard context menu
+      const { pageX: x, pageY: y } = event
+
+      // Call the method to show the context menu
+      this.$emit('showContextMenu', { note: this.note, x, y })
     },
     toggleSelection() {
       if (this.isSelected) {
