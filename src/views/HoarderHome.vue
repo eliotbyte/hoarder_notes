@@ -103,5 +103,5 @@ export default {
 </script>
 
 <style>
-/* Добавьте стили, если нужно */
+/* Add styles if needed */
 </style>

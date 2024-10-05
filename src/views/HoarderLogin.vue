@@ -36,7 +36,7 @@ export default {
         this.$router.push('/')
       } catch (err) {
         this.error =
-          'Ошибка авторизации. Проверьте правильность введённых данных.'
+          'Authorization error. Check the correctness of the entered data.'
       }
     },
   },
