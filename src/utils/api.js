@@ -6,6 +6,7 @@ const apiClient = axios.create({
   baseURL: 'http://localhost:5032/api',
 })
 
+// Request interceptor to add the token to headers
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
   if (token) {
