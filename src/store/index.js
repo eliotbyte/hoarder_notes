@@ -7,12 +7,15 @@ export default createStore({
   state: {
     notes: [],
     selectedNotes: [],
-    selectionMode: false, // Added to track selection mode
+    selectionMode: false,
     token: localStorage.getItem('token') || null,
   },
   mutations: {
     setNotes(state, notes) {
       state.notes = notes
+    },
+    appendNotes(state, notes) {
+      state.notes = state.notes.concat(notes)
     },
     setSelectedNotes(state, selectedNotes) {
       state.selectedNotes = selectedNotes
@@ -30,18 +33,24 @@ export default createStore({
     },
   },
   actions: {
-    async fetchNotes({ commit }, { lastNoteCreatedAt, page } = {}) {
+    async fetchNotes({ commit }, { lastNoteCreatedAt, page, append = false } = {}) {
       try {
         const params = {
           lastNoteCreatedAt: lastNoteCreatedAt || new Date().toISOString(),
           page: page || 1,
           pageSize: 10,
         }
-
+    
         const notes = await api.getNotes(params)
-        commit('setNotes', notes)
+        if (append) {
+          commit('appendNotes', notes)
+        } else {
+          commit('setNotes', notes)
+        }
+        return notes
       } catch (error) {
         console.error('Error fetching notes:', error)
+        throw error // It's good practice to re-throw the error after logging
       }
     },
     async login({ commit, dispatch }, credentials) {

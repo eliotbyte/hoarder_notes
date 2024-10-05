@@ -128,6 +128,21 @@ export default {
 }
 </script>
 
-<style>
-/* Add styles if needed */
+<style scoped>
+.fixed-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  background-color: var(--background-color);
+  /* Add any additional styling you need */
+}
+
+.header-container {
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 </style>
