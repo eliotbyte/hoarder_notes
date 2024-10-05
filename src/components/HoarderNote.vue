@@ -14,16 +14,13 @@
       v-if="note.parentId"
       class="reply-preview-in-note"
       :class="{ 'disable-pointer-events': selectionMode }"
+      @mousedown.stop
     >
       <router-link :to="`/note/${note.parentId}`">{{
         parentNoteTextShort
       }}</router-link>
     </div>
-    <div
-      class="note-text"
-      :class="{ 'disable-text-selection': selectionMode }"
-      @mousedown.stop
-    >
+    <div class="note-text" :class="{ 'disable-text-selection': selectionMode }">
       <span>{{ note.text }}</span>
     </div>
     <div
@@ -144,6 +141,11 @@ export default {
     handleMouseDown(event) {
       if (event.button !== 0) return // Only handle left-click
 
+      // Ignore mousedown events originating from note-text
+      if (event.target.closest('.note-text')) {
+        return
+      }
+
       this.isMouseDown = true
       this.startX = event.clientX
       this.startY = event.clientY
@@ -151,12 +153,7 @@ export default {
       this.hasExitedNote = false
       this.isSelectingText = false
 
-      // Check if user is starting to select text
-      const selection = window.getSelection()
-      if (selection.type === 'Range') {
-        this.isSelectingText = true
-      }
-
+      // Start a timer for long press
       if (this.selectionMode) {
         // In selection mode, toggle selection immediately
         if (this.isSelected) {
@@ -167,7 +164,6 @@ export default {
           this.toggleSelection()
         }
       } else {
-        // Start a timer for long press
         this.mouseDownTimeout = setTimeout(() => {
           if (
             !this.isDragging &&
