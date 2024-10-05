@@ -1,10 +1,10 @@
-<!-- ./src/components/HoarderNoteModal.vue -->
+// ./src/components/HoarderNoteModal.vue
 
 <template>
   <div class="modal">
     <div class="modal-content">
       <h2 class="text-xl font-bold text-textColor">{{ modalTitle }}</h2>
-      <!-- Превью ответа -->
+      <!-- Reply preview -->
       <div
         v-if="replyPreviewVisible"
         class="reply-preview bg-background text-textColor rounded-md p-2 mb-2 flex justify-between items-center"
@@ -12,18 +12,18 @@
         <span>{{ replyPreviewTextShort }}</span>
         <img
           src="https://www.svgrepo.com/download/509072/cross.svg"
-          alt="Удалить ответ"
+          alt="Delete reply"
           class="w-4 h-4 cursor-pointer"
           @click="showRemoveReplyModal"
         />
       </div>
-      <!-- Поле ввода заметки -->
+      <!-- Note input field -->
       <textarea
         v-model="noteText"
         class="note-input bg-noteBackground text-textColor"
-        placeholder="Введите текст..."
+        placeholder="Enter text..."
       ></textarea>
-      <!-- Поле ввода тегов -->
+      <!-- Tag input field -->
       <div
         class="note-tags-input-container bg-noteBackground text-textColor rounded-md p-2 mt-2 flex flex-wrap"
       >
@@ -31,7 +31,7 @@
           <span class="tag-text">{{ tag }}</span>
           <img
             src="https://www.svgrepo.com/download/509072/cross.svg"
-            alt="Удалить тег"
+            alt="Delete tag"
             class="tag-remove"
             @click.stop="removeTag(tag)"
           />
@@ -40,7 +40,7 @@
           ref="tagInput"
           v-model="tagInput"
           class="note-tags-input bg-noteBackground text-textColor flex-grow focus:outline-none"
-          placeholder="Введите теги..."
+          placeholder="Enter tags..."
           @keydown="handleKeyDown"
         />
       </div>
@@ -49,7 +49,7 @@
           class="bg-gray-500 text-white px-4 py-2 rounded-md"
           @click="closeModal"
         >
-          Отмена
+          Cancel
         </button>
         <button
           class="bg-blue-500 text-white px-4 py-2 rounded-md"
@@ -59,7 +59,7 @@
         </button>
       </div>
     </div>
-    <!-- Модальные окна подтверждения -->
+    <!-- Confirmation modals -->
     <ConfirmationModal
       v-if="showConfirmation"
       @confirm="discardChanges"
@@ -115,15 +115,15 @@ export default {
   computed: {
     modalTitle() {
       if (this.localModalMode === 'edit') {
-        return 'Редактировать заметку'
+        return 'Edit note'
       } else if (this.localModalMode === 'reply') {
-        return 'Ответить на заметку'
+        return 'Reply to note'
       } else {
-        return 'Создать заметку'
+        return 'Create note'
       }
     },
     postButtonText() {
-      return this.localModalMode === 'edit' ? 'Сохранить' : 'Опубликовать'
+      return this.localModalMode === 'edit' ? 'Save' : 'Post'
     },
     hasUnsavedChanges() {
       return (
@@ -249,5 +249,5 @@ export default {
 </script>
 
 <style scoped>
-/* Ваши стили */
+/* Add styles if needed */
 </style>

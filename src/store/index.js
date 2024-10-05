@@ -7,7 +7,7 @@ export default createStore({
   state: {
     notes: [],
     selectedNotes: [],
-    selectionMode: false, // Добавлено для отслеживания режима выделения
+    selectionMode: false, // Added to track selection mode
     token: localStorage.getItem('token') || null,
   },
   mutations: {
@@ -41,7 +41,7 @@ export default createStore({
         const notes = await api.getNotes(params)
         commit('setNotes', notes)
       } catch (error) {
-        console.error('Ошибка при получении заметок:', error)
+        console.error('Error fetching notes:', error)
       }
     },
     async login({ commit, dispatch }, credentials) {
@@ -49,10 +49,10 @@ export default createStore({
         const data = await api.login(credentials)
         const token = data.token
         commit('setToken', token)
-        // После успешной авторизации загружаем заметки
+        // After successful authentication, load notes
         dispatch('fetchNotes')
       } catch (error) {
-        console.error('Ошибка при авторизации:', error)
+        console.error('Login error:', error)
         throw error
       }
     },
@@ -62,25 +62,25 @@ export default createStore({
     async createNote({ dispatch }, noteData) {
       try {
         await api.createNote(noteData)
-        dispatch('fetchNotes') // Обновляем список заметок
+        dispatch('fetchNotes') // Refresh notes list
       } catch (error) {
-        console.error('Ошибка при создании заметки:', error)
+        console.error('Error creating note:', error)
       }
     },
     async updateNote({ dispatch }, noteData) {
       try {
         await api.updateNote(noteData)
-        dispatch('fetchNotes') // Обновляем список заметок
+        dispatch('fetchNotes') // Refresh notes list
       } catch (error) {
-        console.error('Ошибка при обновлении заметки:', error)
+        console.error('Error updating note:', error)
       }
     },
     async deleteNote({ dispatch }, noteId) {
       try {
         await api.deleteNote(noteId)
-        dispatch('fetchNotes') // Обновляем список заметок
+        dispatch('fetchNotes') // Refresh notes list
       } catch (error) {
-        console.error('Ошибка при удалении заметки:', error)
+        console.error('Error deleting note:', error)
       }
     },
   },

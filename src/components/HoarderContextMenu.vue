@@ -45,7 +45,7 @@ export default {
   methods: {
     showContextMenu({ note, x, y }) {
       console.log('showContextMenu in HoarderContextMenu.vue called')
-      console.log('Позиция контекстного меню:', x, y)
+      console.log('Context menu position:', x, y)
       this.note = note
       this.x = x
       this.y = y
@@ -78,9 +78,9 @@ export default {
   border: 1px solid var(--border-color);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   padding: 10px;
-  z-index: 9999; /* Установите высокий z-index */
+  z-index: 9999;
   border-radius: 8px;
   background-color: var(--note-background-color);
-  display: block; /* Убедитесь, что display установлен в block */
+  display: block;
 }
 </style>
