@@ -3,26 +3,33 @@
 <template>
   <div
     :class="['note', { 'selected-note': isSelected }]"
-    @click="handleClick"
-    @contextmenu.prevent="showContextMenu"
     @mousedown="handleMouseDown"
     @mousemove="handleMouseMove"
     @mouseup="handleMouseUp"
-    :style="{
-      cursor: selectionMode
-        ? selectionAction === 'select'
-          ? 'copy'
-          : 'alias'
-        : 'default',
-    }"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
   >
-    <div v-if="note.parentId" class="reply-preview-in-note">
+    <div
+      v-if="note.parentId"
+      class="reply-preview-in-note"
+      :class="{ 'disable-pointer-events': selectionMode }"
+    >
       <router-link :to="`/note/${note.parentId}`">{{
         parentNoteTextShort
       }}</router-link>
     </div>
-    <div class="note-text">{{ note.text }}</div>
-    <div v-if="hasTags" class="note-tags">
+    <div
+      class="note-text"
+      :class="{ 'disable-text-selection': selectionMode }"
+      @mousedown.stop
+    >
+      <span>{{ note.text }}</span>
+    </div>
+    <div
+      v-if="hasTags"
+      class="note-tags"
+      :class="{ 'disable-pointer-events': selectionMode }"
+    >
       <a
         v-for="tag in filteredTags"
         :key="tag"
@@ -34,7 +41,10 @@
       </a>
     </div>
     <div class="note-bottom">
-      <div class="note-buttons">
+      <div
+        class="note-buttons"
+        :class="{ 'disable-pointer-events': selectionMode }"
+      >
         <img
           src="https://www.svgrepo.com/download/514218/reply.svg"
           alt="Reply Icon"
@@ -43,7 +53,11 @@
         />
         <span v-if="replyCount > 0" class="reply-count">{{ replyCount }}</span>
       </div>
-      <div class="note-time" :title="formattedFullDate">
+      <div
+        class="note-time"
+        :title="formattedFullDate"
+        :class="{ 'disable-pointer-events': selectionMode }"
+      >
         <router-link :to="`/note/${note.id}`">{{ formattedDate }}</router-link>
       </div>
     </div>
@@ -65,12 +79,13 @@ export default {
     return {
       isSelected: false,
       isMouseDown: false,
-      selectionAction: null,
+      isDragging: false,
+      selectionAction: null, // 'select' or 'deselect'
       startX: 0,
       startY: 0,
-      selectionDragActive: false,
       mouseDownTimeout: null,
-      isTextSelecting: false,
+      hasExitedNote: false,
+      isSelectingText: false,
     }
   },
   computed: {
@@ -125,17 +140,102 @@ export default {
   },
   methods: {
     ...mapMutations(['setSelectedNotes', 'setSelectionMode']),
-    handleClick(event) {
+    handleMouseDown(event) {
+      if (event.button !== 0) return // Only handle left-click
+
+      this.isMouseDown = true
+      this.startX = event.clientX
+      this.startY = event.clientY
+      this.isDragging = false
+      this.hasExitedNote = false
+      this.isSelectingText = false
+
+      // Check if user is starting to select text
+      const selection = window.getSelection()
+      if (selection.type === 'Range') {
+        this.isSelectingText = true
+      }
+
       if (this.selectionMode) {
-        if (this.selectionDragActive) {
-          // Если было активное перетаскивание, предотвращаем действие по клику
-          this.selectionDragActive = false
-          this.selectionAction = null
-          event.preventDefault()
-          return
+        // In selection mode, toggle selection immediately
+        if (this.isSelected) {
+          this.selectionAction = 'deselect'
+          this.toggleSelection()
+        } else {
+          this.selectionAction = 'select'
+          this.toggleSelection()
         }
-        this.toggleSelection()
+      } else {
+        // Start a timer for long press
+        this.mouseDownTimeout = setTimeout(() => {
+          if (
+            !this.isDragging &&
+            !this.hasExitedNote &&
+            !this.isSelectingText
+          ) {
+            this.enterSelectionMode()
+            // Set selection action based on current selection state
+            if (this.isSelected) {
+              this.selectionAction = 'deselect'
+            } else {
+              this.selectionAction = 'select'
+            }
+          }
+        }, 500) // 0.5 seconds
+      }
+    },
+    handleMouseMove(event) {
+      if (!this.isMouseDown) return
+
+      const deltaX = Math.abs(event.clientX - this.startX)
+      const deltaY = Math.abs(event.clientY - this.startY)
+
+      if (deltaX > 5 || deltaY > 5) {
+        this.isDragging = true
+        // Prevent text selection while dragging
+        window.getSelection().removeAllRanges()
         event.preventDefault()
+      }
+    },
+    handleMouseUp(event) {
+      if (event.button !== 0) return
+      this.isMouseDown = false
+      clearTimeout(this.mouseDownTimeout)
+      this.selectionAction = null
+      this.isDragging = false
+      this.hasExitedNote = false
+      this.isSelectingText = false
+    },
+    handleGlobalMouseUp() {
+      this.isMouseDown = false
+      clearTimeout(this.mouseDownTimeout)
+      this.selectionAction = null
+      this.isDragging = false
+      this.hasExitedNote = false
+      this.isSelectingText = false
+    },
+    handleMouseEnter() {
+      if (this.isMouseDown && this.selectionMode && this.selectionAction) {
+        if (this.selectionAction === 'select' && !this.isSelected) {
+          this.toggleSelection()
+        } else if (this.selectionAction === 'deselect' && this.isSelected) {
+          this.toggleSelection()
+        }
+      }
+    },
+    handleMouseLeave() {
+      if (this.isMouseDown && !this.selectionMode) {
+        clearTimeout(this.mouseDownTimeout)
+        this.hasExitedNote = true
+
+        this.enterSelectionMode()
+        // Set selection action based on current selection state
+        if (this.isSelected) {
+          this.selectionAction = 'deselect'
+        } else {
+          this.selectionAction = 'select'
+        }
+        this.toggleSelection() // Apply action to the initial note
       }
     },
     toggleSelection() {
@@ -146,149 +246,15 @@ export default {
       } else {
         this.setSelectedNotes([...this.selectedNotes, this.note])
       }
-      this.isSelected = !this.isSelected
-    },
-    showContextMenu(event) {
-      this.$emit('showContextMenu', {
-        note: this.note,
-        x: event.pageX,
-        y: event.pageY,
-      })
-    },
-    replyToNote() {
-      this.$emit('replyNote', this.note)
-    },
-    handleMouseDown(event) {
-      if (event.button !== 0) return // Обрабатываем только левую кнопку мыши
-      this.isMouseDown = true
-      this.startX = event.clientX
-      this.startY = event.clientY
-      this.selectionDragActive = false
-      this.isTextSelecting = false
-
-      // Проверяем, началось ли выделение текста
-      const selection = window.getSelection()
-      if (selection && selection.type === 'Range') {
-        this.isTextSelecting = true
-      }
-
-      this.mouseDownTimeout = setTimeout(() => {
-        if (!this.isTextSelecting) {
-          this.enterSelectionMode()
-
-          if (this.isSelected) {
-            this.selectionAction = 'deselect'
-          } else {
-            this.selectionAction = 'select'
-          }
-          this.applySelectionAction()
-        }
-      }, 200) // Таймаут для определения долгого нажатия
-    },
-    handleMouseMove(event) {
-      if (this.isMouseDown) {
-        const deltaX = Math.abs(event.clientX - this.startX)
-        const deltaY = Math.abs(event.clientY - this.startY)
-        if (deltaX > 5 || deltaY > 5) {
-          this.selectionDragActive = true
-        }
-
-        if (this.isTextSelecting) {
-          // Проверяем, перешла ли мышь на другую заметку
-          const elementUnderCursor = document.elementFromPoint(
-            event.clientX,
-            event.clientY
-          )
-          if (elementUnderCursor) {
-            const noteElement = elementUnderCursor.closest('.note')
-            if (noteElement && noteElement !== this.$el) {
-              // Переходим в режим мультивыделения
-              this.isTextSelecting = false
-              this.enterSelectionMode()
-              // Сбрасываем выделение текста
-              window.getSelection().removeAllRanges()
-              // Применяем действие выделения
-              if (this.isSelected) {
-                this.selectionAction = 'deselect'
-              } else {
-                this.selectionAction = 'select'
-              }
-              this.applySelectionAction()
-              this.selectionAction = 'select' // Начинаем выделять новые заметки
-            }
-          }
-        } else if (this.selectionMode && this.selectionAction) {
-          // Выделение или снятие выделения заметок при перетаскивании
-          const elementUnderCursor = document.elementFromPoint(
-            event.clientX,
-            event.clientY
-          )
-          if (elementUnderCursor) {
-            const noteElement = elementUnderCursor.closest('.note')
-            if (
-              noteElement &&
-              noteElement.__vue__ &&
-              noteElement.__vue__ !== this
-            ) {
-              noteElement.__vue__.applySelectionActionFromOutside(
-                this.selectionAction
-              )
-            }
-          }
-          // Предотвращаем выделение текста во время перетаскивания
-          event.preventDefault()
-        }
-      }
-    },
-    handleMouseUp(event) {
-      if (event.button !== 0) return
-      this.isMouseDown = false
-      clearTimeout(this.mouseDownTimeout)
-
-      // Не переключаем выделение при клике, если было активное перетаскивание
-      if (this.selectionMode && this.selectionDragActive) {
-        this.selectionDragActive = false
-        this.selectionAction = null
-        event.preventDefault()
-        return
-      }
-
-      this.selectionAction = null
-    },
-    applySelectionAction() {
-      if (this.selectionAction === 'select') {
-        if (!this.isSelected) {
-          this.setSelectedNotes([...this.selectedNotes, this.note])
-          this.isSelected = true
-        }
-      } else if (this.selectionAction === 'deselect') {
-        if (this.isSelected) {
-          this.setSelectedNotes(
-            this.selectedNotes.filter((n) => n.id !== this.note.id)
-          )
-          this.isSelected = false
-        }
-      }
-    },
-    applySelectionActionFromOutside(action) {
-      this.selectionAction = action
-      this.applySelectionAction()
     },
     enterSelectionMode() {
       if (!this.selectionMode) {
         this.setSelectionMode(true)
         this.setSelectedNotes([this.note])
-        this.isSelected = true
-        // Сбрасываем выделение текста
-        window.getSelection().removeAllRanges()
       }
     },
-    handleGlobalMouseUp() {
-      this.isMouseDown = false
-      clearTimeout(this.mouseDownTimeout)
-      this.selectionAction = null
-      this.selectionDragActive = false
-      this.isTextSelecting = false
+    replyToNote() {
+      this.$emit('replyNote', this.note)
     },
   },
   mounted() {
@@ -322,6 +288,21 @@ export default {
   color: var(--text-color);
   word-break: break-word;
   white-space: pre-wrap;
+  display: inline-block;
+  cursor: default;
+}
+
+.note-text.disable-text-selection {
+  user-select: none;
+  cursor: default;
+}
+
+.disable-text-selection {
+  user-select: none;
+}
+
+.disable-pointer-events {
+  pointer-events: none;
 }
 
 .note-tags {
@@ -392,10 +373,5 @@ export default {
 
 .icon-filter {
   filter: var(--icon-filter);
-}
-
-/* Добавляем стиль для отключения выделения текста при режиме выделения */
-.disable-text-selection {
-  user-select: none;
 }
 </style>
