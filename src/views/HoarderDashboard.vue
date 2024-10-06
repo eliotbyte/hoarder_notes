@@ -1,13 +1,15 @@
 <template>
-  <router-view></router-view>
+  <div>
+    <h1>Dashboard</h1>
+  </div>
 </template>
 
 <script>
 export default {
-  name: 'App',
+  name: 'HoarderDashboard',
 }
 </script>
 
-<style>
+<style scoped>
 /* Styles */
 </style>
