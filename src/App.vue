@@ -1,31 +1,19 @@
 <!-- ./src/App.vue -->
 
 <template>
-  <router-view />
+  <el-button>{{ message }}</el-button>
 </template>
 
 <script>
 export default {
-  name: 'App',
-  mounted() {
-    document.addEventListener('selectionchange', this.handleSelectionChange)
-  },
-  beforeUnmount() {
-    document.removeEventListener('selectionchange', this.handleSelectionChange)
-  },
-  methods: {
-    handleSelectionChange() {
-      if (this.$store.state.selectionMode) {
-        window.getSelection().removeAllRanges()
-      }
-    },
+  data() {
+    return {
+      message: 'Hello Element Plus',
+    }
   },
 }
 </script>
 
-<style>
-/* Global styles can be added here */
-.disable-text-selection {
-  user-select: none;
-}
+<style scoped>
+/* Styles */
 </style>
