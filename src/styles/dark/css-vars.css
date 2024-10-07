@@ -1,0 +1,27 @@
+html.dark {
+  /* Background Colors */
+  --bg-color: #191919;
+  --block-color: #404040;
+  --text-color: #E5E5E5;
+
+  /* Element Plus Dark Theme Overrides */
+  --el-bg-color: #191919;
+  --el-border-color: #333333;
+  --el-text-color-primary: #E5E5E5;
+  --el-color-primary: #589ef8;
+  /* Add more overrides as needed */
+}
+
+html:not(.dark) {
+  /* Light Mode Colors */
+  --bg-color: #E5E5E5;
+  --block-color: #F2F2F2;
+  --text-color: #333333;
+
+  /* Element Plus Light Theme Overrides */
+  --el-bg-color: #ffffff;
+  --el-border-color: #dcdfe6;
+  --el-text-color-primary: #333333;
+  --el-color-primary: #409EFF;
+  /* Add more overrides as needed */
+}

@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HoarderAuth from '../views/HoarderAuth.vue';
-import HoarderDashboard from '../views/HoarderDashboard.vue';
+import HoarderNotes from '../views/HoarderNotes.vue';
 
 const routes = [
   {
@@ -13,9 +13,9 @@ const routes = [
     component: HoarderAuth
   },
   {
-    path: '/dashboard',
-    name: 'HoarderDashboard',
-    component: HoarderDashboard,
+    path: '/notes',
+    name: 'HoarderNotes',
+    component: HoarderNotes,
     meta: { requiresAuth: true }
   }
 ];
@@ -27,6 +27,14 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('authToken');
+
+  // If navigating to '/' or '/auth' and token exists, redirect to '/notes'
+  if ((to.path === '/' || to.path === '/auth') && token) {
+    next('/notes');
+    return;
+  }
+
+  // If the route requires auth and no token, redirect to '/auth'
   if (to.matched.some(record => record.meta.requiresAuth) && !token) {
     next('/auth');
   } else {

@@ -58,7 +58,7 @@ export default {
           localStorage.setItem('authToken', token)
 
           // Redirect to a protected page
-          this.$router.push('/dashboard')
+          this.$router.push('/notes')
         } else {
           // If status is not 200, show an error
           ElNotification({
