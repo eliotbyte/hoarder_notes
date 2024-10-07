@@ -23,7 +23,7 @@
           </el-col>
           <el-col :span="12">
             <div class="grid-content p-4">
-              <div class="note bg-white rounded-[15px] space-y-2">
+              <div class="note bg-white rounded-[15px] space-y-3">
                 <!-- Note Reply Section acting as a clickable link -->
                 <div class="note-reply p-2 rounded-[10px]">
                   <span class="note-reply-link" @click="handleReplyClick">{{
@@ -71,6 +71,7 @@
                       <el-dropdown
                         placement="right-start"
                         @command="handleDropdownCommand"
+                        trigger="click"
                         :popper-options="{
                           modifiers: [
                             { name: 'offset', options: { offset: [-10, 12] } },
@@ -232,7 +233,7 @@ export default {
 }
 
 .note-reply {
-  background-color: var(--overlay-bg-color); /* Updated to use CSS variable */
+  background-color: var(--overlay-bg-color);
   border-radius: 10px;
   padding: 8px;
   font-size: 14px;
@@ -318,5 +319,12 @@ export default {
 .custom-dropdown >>> .el-dropdown-item:hover {
   background-color: var(--note-bright-color);
   color: var(--text-color) !important;
+}
+
+/* Remove white border on hover for note-options */
+.note-options:hover,
+.note-options:focus {
+  border: none;
+  outline: none;
 }
 </style>
