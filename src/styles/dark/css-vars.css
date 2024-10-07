@@ -1,8 +1,18 @@
+/* ./src/styles/dark/css-vars.css */
+
 html.dark {
   /* Background Colors */
   --bg-color: #191919;
   --block-color: #404040;
   --text-color: #E5E5E5;
+
+  /* New Color Variables */
+  --note-color: #404040;
+  --note-bright-color: #606060; /* Slightly brighter than --block-color */
+  --tag-bg-color: #606060;
+  --dropdown-bg-color: #606060;
+  --faded-text-color: rgba(229, 229, 229, 0.7); /* 70% opacity */
+  --overlay-bg-color: rgba(0, 0, 0, 0.1); /* More dark for note-reply */
 
   /* Element Plus Dark Theme Overrides */
   --el-bg-color: #191919;
@@ -17,6 +27,14 @@ html:not(.dark) {
   --bg-color: #E5E5E5;
   --block-color: #F2F2F2;
   --text-color: #333333;
+
+  /* New Color Variables */
+  --note-color: #F2F2F2;
+  --note-bright-color: #FFFFFF; /* Slightly brighter than --block-color */
+  --tag-bg-color: #FFFFFF;
+  --dropdown-bg-color: #FFFFFF;
+  --faded-text-color: rgba(51, 51, 51, 0.7); /* 70% opacity */
+  --overlay-bg-color: rgba(0, 0, 0, 0.05); /* Original color for note-reply */
 
   /* Element Plus Light Theme Overrides */
   --el-bg-color: #ffffff;
