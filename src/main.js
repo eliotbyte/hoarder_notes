@@ -2,6 +2,8 @@ import { createApp } from 'vue';
 import App from './App.vue';
 import ElementPlus from 'element-plus';
 import 'element-plus/dist/index.css';
+import './styles/dark/css-vars.css'
+import "./styles/index.css";
 import router from './router';
 import api from './utils/api';
 
