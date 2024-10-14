@@ -29,30 +29,36 @@
                 class="note bg-white rounded-[15px] space-y-3"
               >
                 <!-- Note Reply Section acting as a clickable link -->
-                <div class="note-reply p-2 rounded-[10px]">
-                  <span class="note-reply-link" @click="handleReplyClick">{{
-                    replyText
-                  }}</span>
+                <div v-if="note.parentId" class="note-reply p-2 rounded-[10px]">
+                  <span class="note-reply-link" @click="handleReplyClick(note)">
+                    {{ note.parentTextPreview }}
+                  </span>
                 </div>
                 <!-- Note Text -->
                 <div class="note-text text-2xl break-words">
                   {{ note.text }}
                 </div>
                 <!-- Note Tags as Buttons -->
-                <div class="note-tags text-gray-600 space-x-1 mb-[5px]">
-                  <el-button size="small" round class="custom-tag">
-                    Tag1
-                  </el-button>
-                  <el-button size="small" round class="custom-tag">
-                    Tag2
+                <div
+                  v-if="note.tags"
+                  class="note-tags text-gray-600 space-x-1 mb-[5px]"
+                >
+                  <el-button
+                    v-for="tag in note.tags"
+                    :key="tag"
+                    size="small"
+                    round
+                    class="custom-tag"
+                  >
+                    {{ tag }}
                   </el-button>
                 </div>
                 <div class="note-footer flex justify-between items-center mt-3">
                   <div
                     class="note-time clickable-link"
-                    @click="handleTimeClick"
+                    @click="handleTimeClick(note)"
                   >
-                    5 hours ago
+                    {{ formatTime(note.createdAt) }}
                   </div>
                   <div
                     class="note-stats flex items-center text-gray-600 space-x-3"
@@ -60,12 +66,19 @@
                     <el-button
                       type="text"
                       class="inline-flex items-center"
-                      @click="handleChatClick"
+                      @click="handleChatClick(note)"
                     >
                       <el-icon class="icon-margin">
                         <ChatRound />
                       </el-icon>
-                      <span>5</span>
+                    </el-button>
+                    <el-button
+                      v-if="note.replyCount > 0"
+                      @click="handleReplyCountClick(note)"
+                    >
+                      <span>
+                        {{ note.replyCount }}
+                      </span>
                     </el-button>
                     <div
                       class="note-options cursor-pointer mr-2 translate-y-[3px]"
@@ -157,18 +170,56 @@ export default {
       }
     }
 
-    const handleReplyClick = () => {
-      console.log('Reply clicked but does nothing')
+    const handleReplyClick = (note) => {
+      console.log('Reply clicked', note)
+      // Logic for handling reply click
     }
 
-    const handleChatClick = () => {
-      console.log('Chat clicked')
+    const handleChatClick = (note) => {
+      console.log('Chat clicked', note)
       // Logic for chat
     }
 
-    const handleTimeClick = () => {
-      console.log('Time clicked')
-      // Placeholder logic for time click
+    const handleReplyCountClick = (note) => {
+      console.log('Reply count clicked', note)
+      // Logic for handling reply count click
+    }
+
+    const handleTimeClick = (note) => {
+      console.log('Time clicked', note)
+      // Logic for time click
+    }
+
+    const formatTime = (createdAt) => {
+      const now = new Date()
+      const created = new Date(createdAt)
+      const diff = now - created
+
+      const seconds = Math.floor(diff / 1000)
+      const minutes = Math.floor(seconds / 60)
+      const hours = Math.floor(minutes / 60)
+      const days = Math.floor(hours / 24)
+      const years = now.getFullYear() - created.getFullYear()
+
+      if (seconds < 60) {
+        return `${seconds} seconds ago`
+      } else if (minutes < 60) {
+        return `${minutes} minutes ago`
+      } else if (hours < 24) {
+        return `${hours} hours ago`
+      } else if (days < 30) {
+        return `${days} days ago`
+      } else if (years < 1) {
+        return created.toLocaleDateString(undefined, {
+          month: 'long',
+          day: 'numeric',
+        })
+      } else {
+        return created.toLocaleDateString(undefined, {
+          month: 'long',
+          year: 'numeric',
+        })
+      }
     }
 
     const loadMoreNotes = async () => {
@@ -197,9 +248,6 @@ export default {
       }
     }
 
-    const replyText =
-      'This is a sample reply text that is limited to 100 characters.'
-
     useInfiniteScroll(window, loadMoreNotes, {
       distance: 100,
       immediate: false,
@@ -211,11 +259,12 @@ export default {
       handleDropdownCommand,
       handleReplyClick,
       handleChatClick,
+      handleReplyCountClick,
       handleTimeClick,
-      replyText,
       notes,
       loading,
       loadMoreNotes,
+      formatTime,
     }
   },
 }
