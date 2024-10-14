@@ -53,7 +53,7 @@
                     {{ tag }}
                   </el-button>
                 </div>
-                <div class="note-footer flex justify-between items-center mt-3">
+                <div class="note-footer flex justify-between items-center mt-1">
                   <div
                     class="note-time clickable-link"
                     @click="handleTimeClick(note)"
@@ -61,27 +61,27 @@
                     {{ formatTime(note.createdAt) }}
                   </div>
                   <div
-                    class="note-stats flex items-center text-gray-600 space-x-3"
+                    class="note-stats flex items-center text-gray-600 space-x-2"
                   >
                     <el-button
                       type="text"
-                      class="inline-flex items-center"
+                      class="inline-flex items-center faded-text"
                       @click="handleChatClick(note)"
                     >
-                      <el-icon class="icon-margin">
+                      <el-icon class="icon-margin faded-text">
                         <ChatRound />
                       </el-icon>
+                      <span
+                        v-if="note.replyCount >= 0"
+                        class="faded-text"
+                        style="margin-left: 0px"
+                      >
+                        {{ note.replyCount }}
+                      </span>
                     </el-button>
                     <el-button
-                      v-if="note.replyCount >= 0"
-                      circle
-                      class="reply-count-button"
-                      @click="handleReplyCountClick(note)"
-                    >
-                      {{ note.replyCount }}
-                    </el-button>
-                    <div
-                      class="note-options cursor-pointer mr-2 translate-y-[3px]"
+                      type="text"
+                      class="inline-flex items-center faded-text"
                     >
                       <el-dropdown
                         placement="right-start"
@@ -91,11 +91,11 @@
                           ],
                         }"
                         trigger="click"
-                        class="custom-dropdown"
+                        class="custom-dropdown faded-text"
                         @command="handleDropdownCommand"
                       >
                         <span class="el-dropdown-link">
-                          <el-icon><MoreFilled /></el-icon>
+                          <el-icon><More /></el-icon>
                         </span>
                         <template #dropdown>
                           <el-dropdown-menu>
@@ -111,7 +111,7 @@
                           </el-dropdown-menu>
                         </template>
                       </el-dropdown>
-                    </div>
+                    </el-button>
                   </div>
                 </div>
               </div>
@@ -131,7 +131,7 @@
 import api from '@/utils/api.js'
 import { computed, ref } from 'vue'
 import { isDark, toggleDark } from '../composables'
-import { Moon, Sunny, ChatRound, MoreFilled } from '@element-plus/icons-vue'
+import { Moon, Sunny, ChatRound, More } from '@element-plus/icons-vue'
 import { useInfiniteScroll } from '@vueuse/core'
 
 export default {
@@ -140,7 +140,7 @@ export default {
     Sunny,
     Moon,
     ChatRound,
-    MoreFilled,
+    More,
   },
   setup() {
     const notes = ref([])
@@ -178,11 +178,6 @@ export default {
     const handleChatClick = (note) => {
       console.log('Chat clicked', note)
       // Logic for chat
-    }
-
-    const handleReplyCountClick = (note) => {
-      console.log('Reply count clicked', note)
-      // Logic for handling reply count click
     }
 
     const handleTimeClick = (note) => {
@@ -259,7 +254,6 @@ export default {
       handleDropdownCommand,
       handleReplyClick,
       handleChatClick,
-      handleReplyCountClick,
       handleTimeClick,
       notes,
       loading,
@@ -412,20 +406,7 @@ export default {
   color: var(--text-color) !important;
 }
 
-.note-options:hover,
-.note-options:focus {
-  border: none;
-  outline: none;
-}
-
-.reply-count-button {
-  background-color: var(--block-color);
-  color: var(--text-color);
-  border: none;
-}
-
-.reply-count-button:hover {
-  background-color: var(--overlay-bg-color);
-  color: var(--text-color);
+.faded-text {
+  color: var(--faded-text-color);
 }
 </style>
