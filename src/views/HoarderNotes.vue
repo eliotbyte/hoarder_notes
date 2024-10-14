@@ -22,8 +22,12 @@
             <div class="grid-content" />
           </el-col>
           <el-col :span="12">
-            <div class="grid-content p-4">
-              <div class="note bg-white rounded-[15px] space-y-3">
+            <div class="grid-content p-4 grid gap-6">
+              <div
+                v-for="note in notes"
+                :key="note.id"
+                class="note bg-white rounded-[15px] space-y-3"
+              >
                 <!-- Note Reply Section acting as a clickable link -->
                 <div class="note-reply p-2 rounded-[10px]">
                   <span class="note-reply-link" @click="handleReplyClick">{{
@@ -32,9 +36,7 @@
                 </div>
                 <!-- Note Text -->
                 <div class="note-text text-2xl break-words">
-                  Note text that is sufficiently long to demonstrate text
-                  wrapping within the note component without overflowing its
-                  boundaries.
+                  {{ note.text }}
                 </div>
                 <!-- Note Tags as Buttons -->
                 <div class="note-tags text-gray-600 space-x-1 mb-[5px]">
@@ -57,8 +59,8 @@
                   >
                     <el-button
                       type="text"
-                      @click="handleChatClick"
                       class="inline-flex items-center"
+                      @click="handleChatClick"
                     >
                       <el-icon class="icon-margin">
                         <ChatRound />
@@ -70,14 +72,14 @@
                     >
                       <el-dropdown
                         placement="right-start"
-                        @command="handleDropdownCommand"
-                        trigger="click"
                         :popper-options="{
                           modifiers: [
                             { name: 'offset', options: { offset: [-10, 12] } },
                           ],
                         }"
+                        trigger="click"
                         class="custom-dropdown"
+                        @command="handleDropdownCommand"
                       >
                         <span class="el-dropdown-link">
                           <el-icon><MoreFilled /></el-icon>
@@ -100,6 +102,7 @@
                   </div>
                 </div>
               </div>
+              <div v-if="loading">Loading...</div>
             </div>
           </el-col>
           <el-col :span="6">
@@ -112,9 +115,11 @@
 </template>
 
 <script>
-import { computed } from 'vue'
+import api from '@/utils/api.js'
+import { computed, ref } from 'vue'
 import { isDark, toggleDark } from '../composables'
 import { Moon, Sunny, ChatRound, MoreFilled } from '@element-plus/icons-vue'
+import { useInfiniteScroll } from '@vueuse/core'
 
 export default {
   name: 'HoarderNotes',
@@ -125,6 +130,13 @@ export default {
     MoreFilled,
   },
   setup() {
+    const notes = ref([])
+    const loading = ref(false)
+    const page = ref(1)
+    const pageSize = ref(10)
+    const lastNoteCreatedAt = ref('2025-10-02T02:06:51.619403')
+    const noMoreNotes = ref(false)
+
     const darkMode = computed(() => isDark.value)
 
     const handleToggleDark = () => {
@@ -159,8 +171,39 @@ export default {
       // Placeholder logic for time click
     }
 
+    const loadMoreNotes = async () => {
+      if (loading.value || noMoreNotes.value) return
+      loading.value = true
+
+      try {
+        const response = await api.get('/api/Notes/filter', {
+          params: {
+            lastNoteCreatedAt: lastNoteCreatedAt.value,
+            page: page.value,
+            pageSize: pageSize.value,
+          },
+        })
+
+        if (response.data.length < pageSize.value) {
+          noMoreNotes.value = true
+        }
+
+        notes.value.push(...response.data)
+        page.value += 1
+      } catch (error) {
+        console.error('Error loading notes:', error)
+      } finally {
+        loading.value = false
+      }
+    }
+
     const replyText =
       'This is a sample reply text that is limited to 100 characters.'
+
+    useInfiniteScroll(window, loadMoreNotes, {
+      distance: 100,
+      immediate: false,
+    })
 
     return {
       isDark: darkMode,
@@ -170,6 +213,9 @@ export default {
       handleChatClick,
       handleTimeClick,
       replyText,
+      notes,
+      loading,
+      loadMoreNotes,
     }
   },
 }
@@ -255,7 +301,6 @@ export default {
 .note-tags {
   font-size: 16px;
   color: var(--text-color);
-  /* Added classes to reduce space between tags and margin-bottom */
 }
 
 .note-footer {
@@ -292,10 +337,8 @@ export default {
 
 .clickable-link {
   cursor: pointer;
-  /* Ensures it looks like a link without changing its appearance */
 }
 
-/* Custom Styles for Tags */
 .custom-tag {
   background-color: var(--tag-bg-color);
   color: var(--faded-text-color);
@@ -303,13 +346,12 @@ export default {
 }
 
 .custom-tag:hover {
-  color: var(--text-color); /* Highlight text on hover similar to menu items */
+  color: var(--text-color);
 }
 
-/* Custom Styles for Dropdown Menu */
 .custom-dropdown >>> .el-dropdown-menu {
   background-color: var(--dropdown-bg-color) !important;
-  border: 1px solid var(--dropdown-bg-color) !important; /* Match border to menu color */
+  border: 1px solid var(--dropdown-bg-color) !important;
 }
 
 .custom-dropdown >>> .el-dropdown-item {
@@ -321,7 +363,6 @@ export default {
   color: var(--text-color) !important;
 }
 
-/* Remove white border on hover for note-options */
 .note-options:hover,
 .note-options:focus {
   border: none;
