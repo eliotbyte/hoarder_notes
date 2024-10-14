@@ -73,12 +73,12 @@
                       </el-icon>
                     </el-button>
                     <el-button
-                      v-if="note.replyCount > 0"
+                      v-if="note.replyCount >= 0"
+                      circle
+                      class="reply-count-button"
                       @click="handleReplyCountClick(note)"
                     >
-                      <span>
-                        {{ note.replyCount }}
-                      </span>
+                      {{ note.replyCount }}
                     </el-button>
                     <div
                       class="note-options cursor-pointer mr-2 translate-y-[3px]"
@@ -416,5 +416,16 @@ export default {
 .note-options:focus {
   border: none;
   outline: none;
+}
+
+.reply-count-button {
+  background-color: var(--block-color);
+  color: var(--text-color);
+  border: none;
+}
+
+.reply-count-button:hover {
+  background-color: var(--overlay-bg-color);
+  color: var(--text-color);
 }
 </style>
