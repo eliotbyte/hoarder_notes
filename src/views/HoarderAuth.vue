@@ -1,83 +1,68 @@
 <template>
   <div class="auth-page">
-    <el-card class="login-card">
+    <n-card class="login-card">
       <h2 class="text-center">Login</h2>
-      <el-form :model="loginForm" @submit.prevent="handleLogin">
-        <el-form-item label="Username" :label-width="formLabelWidth">
-          <el-input
-            v-model="loginForm.Username"
+      <n-form :model="loginForm" @submit.prevent="submitForm">
+        <n-form-item label="Username" :label-width="formLabelWidth">
+          <n-input
+            :value="loginForm.username"
+            @input="(val) => (loginForm.username = val)"
             placeholder="Please input username"
             clearable
-          ></el-input>
-        </el-form-item>
-        <el-form-item label="Password" :label-width="formLabelWidth">
-          <el-input
-            v-model="loginForm.Password"
+          />
+        </n-form-item>
+        <n-form-item label="Password" :label-width="formLabelWidth">
+          <n-input
+            :value="loginForm.password"
+            @input="(val) => (loginForm.password = val)"
             type="password"
             placeholder="Please input password"
             show-password
             clearable
-          ></el-input>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" plain class="w-full" @click="handleLogin">
-            Login
-          </el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
+          />
+        </n-form-item>
+        <n-form-item>
+          <n-button type="primary" block @click="submitForm">Login</n-button>
+        </n-form-item>
+      </n-form>
+    </n-card>
   </div>
 </template>
 
-<script>
-import { ElNotification } from 'element-plus'
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useMessage } from 'naive-ui'
+import api from '@/utils/api'
 
-export default {
-  data() {
-    return {
-      loginForm: {
-        Username: '',
-        Password: '',
-      },
-      formLabelWidth: '100px',
+const loginForm = ref({
+  username: '',
+  password: '',
+})
+
+const formLabelWidth = '100px'
+const router = useRouter()
+const message = useMessage()
+
+const submitForm = async () => {
+  console.log('Form Data:', loginForm.value)
+  try {
+    const response = await api.post('/api/Users/login', {
+      username: loginForm.value.username,
+      password: loginForm.value.password,
+    })
+    if (response.status === 200) {
+      const token = response.data.token
+      localStorage.setItem('authToken', token)
+      router.push('/notes')
+      message.success('Login successful!')
+    } else {
+      message.error('Invalid username or password.')
     }
-  },
-  methods: {
-    async handleLogin() {
-      try {
-        // Call API for authentication
-        const response = await this.$axios.post(
-          '/api/Users/login',
-          this.loginForm
-        )
-
-        if (response.status === 200) {
-          const token = response.data.token
-
-          // Save the token to localStorage
-          localStorage.setItem('authToken', token)
-
-          // Redirect to a protected page
-          this.$router.push('/notes')
-        } else {
-          // If status is not 200, show an error
-          ElNotification({
-            title: 'Error',
-            message: 'Invalid username or password.',
-            type: 'error',
-          })
-        }
-      } catch (error) {
-        console.error('Login failed', error)
-        // Show error notification
-        ElNotification({
-          title: 'Error',
-          message: 'Invalid username or password.',
-          type: 'error',
-        })
-      }
-    },
-  },
+  } catch (error) {
+    console.error('Login failed', error)
+    message.error('An error occurred while logging in. Please try again.')
+  }
 }
 </script>
 
@@ -87,7 +72,6 @@ export default {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background-color: #f5f5f5;
 }
 
 .login-card {
@@ -97,9 +81,5 @@ export default {
 
 .text-center {
   text-align: center;
-}
-
-.w-full {
-  width: 100%;
 }
 </style>

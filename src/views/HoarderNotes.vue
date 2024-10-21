@@ -1,27 +1,27 @@
 <template>
   <div class="common-layout">
-    <el-container>
-      <el-header class="header">
+    <n-layout>
+      <n-layout-header class="header">
         <div class="header-left">
           <h1 class="header-title">Hoarder Notes</h1>
         </div>
         <div class="header-right">
-          <el-button type="text" @click="handleToggleDark">
-            <el-icon v-if="!isDark">
+          <n-button text @click="handleToggleDark">
+            <n-icon v-if="!isDark">
               <Sunny />
-            </el-icon>
-            <el-icon v-else>
+            </n-icon>
+            <n-icon v-else>
               <Moon />
-            </el-icon>
-          </el-button>
+            </n-icon>
+          </n-button>
         </div>
-      </el-header>
-      <el-main>
-        <el-row :gutter="30">
-          <el-col :span="6">
+      </n-layout-header>
+      <n-layout-content>
+        <n-row :gutter="30">
+          <n-col :span="6">
             <div class="grid-content" />
-          </el-col>
-          <el-col :span="12">
+          </n-col>
+          <n-col :span="12">
             <div class="grid-content p-4 grid gap-6">
               <NoteItem
                 v-for="note in notes"
@@ -35,27 +35,43 @@
               />
               <div v-if="loading">Loading...</div>
             </div>
-          </el-col>
-          <el-col :span="6">
+          </n-col>
+          <n-col :span="6">
             <div class="grid-content" />
-          </el-col>
-        </el-row>
-      </el-main>
-    </el-container>
+          </n-col>
+        </n-row>
+      </n-layout-content>
+    </n-layout>
   </div>
 </template>
 
 <script>
-import api from '@/utils/api.js'
+import {
+  NLayout,
+  NLayoutHeader,
+  NLayoutContent,
+  NRow,
+  NCol,
+  NButton,
+  NIcon,
+} from 'naive-ui'
+import { SunnyOutline as Sunny, MoonOutline as Moon } from '@vicons/ionicons5'
 import { computed, ref } from 'vue'
 import { isDark, toggleDark } from '../composables'
-import { Moon, Sunny } from '@element-plus/icons-vue'
 import { useInfiniteScroll } from '@vueuse/core'
 import NoteItem from '@/components/NoteItem.vue'
+import api from '@/utils/api.js'
 
 export default {
   name: 'HoarderNotes',
   components: {
+    NLayout,
+    NLayoutHeader,
+    NLayoutContent,
+    NRow,
+    NCol,
+    NButton,
+    NIcon,
     Sunny,
     Moon,
     NoteItem,
@@ -71,18 +87,11 @@ export default {
     const darkMode = computed(() => isDark.value)
 
     const handleToggleDark = () => {
-      console.log('Toggle dark mode clicked')
       toggleDark()
     }
 
     const handleDropdownCommand = (command, note) => {
-      if (command === 'reply') {
-        console.log('Reply clicked', note)
-      } else if (command === 'edit') {
-        console.log('Edit clicked', note)
-      } else if (command === 'delete') {
-        console.log('Delete clicked', note)
-      }
+      console.log(`${command} clicked`, note)
     }
 
     const handleReplyClick = (note) => {
@@ -200,7 +209,7 @@ export default {
   color: var(--text-color);
 }
 
-.el-icon {
+.n-icon {
   font-size: 24px;
   color: var(--text-color);
 }

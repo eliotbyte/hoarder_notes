@@ -9,7 +9,7 @@
       {{ note.text }}
     </div>
     <div v-if="note.tags" class="note-tags text-gray-600 space-x-1 mb-[5px]">
-      <el-button
+      <n-button
         v-for="tag in note.tags"
         :key="tag"
         size="small"
@@ -17,59 +17,55 @@
         class="custom-tag"
       >
         {{ tag }}
-      </el-button>
+      </n-button>
     </div>
     <div class="note-footer flex justify-between items-center mt-1">
       <div class="note-time clickable-link" @click="handleTimeClick(note)">
         {{ formatTime(note.createdAt) }}
       </div>
-      <div class="note-stats flex items-center text-gray-600 space-x-2">
-        <el-button
-          type="text"
+      <div class="note-stats flex items-center text-gray-600 space-x-1">
+        <n-button
+          v-if="note.replyCount > 0"
+          text
           class="inline-flex items-center faded-text"
           @click="handleChatClick(note)"
         >
-          <el-icon class="icon-margin faded-text">
-            <ChatRound />
-          </el-icon>
-          <span v-if="note.replyCount > 0" class="faded-text">
+          <n-icon class="icon-margin faded-text">
+            <Reply />
+          </n-icon>
+          <span class="faded-text">
             {{ note.replyCount }}
           </span>
-        </el-button>
-        <el-button type="text" class="inline-flex items-center faded-text">
-          <el-dropdown
-            placement="right-start"
-            :popper-options="{
-              modifiers: [{ name: 'offset', options: { offset: [-10, 12] } }],
-            }"
-            trigger="click"
-            class="custom-dropdown faded-text"
-            @command="handleDropdownCommand"
-          >
-            <span class="el-dropdown-link">
-              <el-icon><More /></el-icon>
-            </span>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="reply">Reply</el-dropdown-item>
-                <el-dropdown-item command="edit">Edit</el-dropdown-item>
-                <el-dropdown-item command="delete">Delete</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </el-button>
+        </n-button>
+        <n-dropdown
+          trigger="click"
+          placement="bottom-end"
+          :options="dropdownOptions"
+          @select="handleDropdownCommand"
+        >
+          <n-button text class="inline-flex items-center faded-text">
+            <n-icon><More /></n-icon>
+          </n-button>
+        </n-dropdown>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ChatRound, More } from '@element-plus/icons-vue'
+import { NButton, NIcon, NDropdown } from 'naive-ui'
+import {
+  ArrowUndoOutline as Reply,
+  EllipsisVerticalOutline as More,
+} from '@vicons/ionicons5'
 
 export default {
   name: 'NoteItem',
   components: {
-    ChatRound,
+    NButton,
+    NIcon,
+    NDropdown,
+    Reply,
     More,
   },
   props: {
@@ -83,6 +79,15 @@ export default {
     },
   },
   emits: ['reply-click', 'chat-click', 'time-click', 'dropdown-command'],
+  data() {
+    return {
+      dropdownOptions: [
+        { label: 'Reply', key: 'reply' },
+        { label: 'Edit', key: 'edit' },
+        { label: 'Delete', key: 'delete' },
+      ],
+    }
+  },
   methods: {
     handleReplyClick(note) {
       this.$emit('reply-click', note)
@@ -93,8 +98,8 @@ export default {
     handleTimeClick(note) {
       this.$emit('time-click', note)
     },
-    handleDropdownCommand(command) {
-      this.$emit('dropdown-command', command, this.note)
+    handleDropdownCommand(key) {
+      this.$emit('dropdown-command', key, this.note)
     },
   },
 }
@@ -162,20 +167,6 @@ export default {
 
 .custom-tag:hover {
   color: var(--text-color);
-}
-
-.custom-dropdown >>> .el-dropdown-menu {
-  background-color: var(--dropdown-bg-color) !important;
-  border: 1px solid var(--dropdown-bg-color) !important;
-}
-
-.custom-dropdown >>> .el-dropdown-item {
-  color: var(--text-color);
-}
-
-.custom-dropdown >>> .el-dropdown-item:hover {
-  background-color: var(--note-bright-color);
-  color: var(--text-color) !important;
 }
 
 .faded-text {
