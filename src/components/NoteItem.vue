@@ -1,52 +1,63 @@
 <template>
-  <div class="note bg-white rounded-[15px] space-y-3">
-    <div v-if="note.parentId" class="note-reply p-2 rounded-[10px]">
-      <span class="note-reply-link" @click="handleReplyClick(note)">
-        {{ note.parentTextPreview }}
-      </span>
-    </div>
-    <div class="note-text text-2xl break-words">
-      {{ note.text }}
-    </div>
-    <div v-if="note.tags" class="note-tags text-gray-600 space-x-1 mb-[5px]">
+  <div class="note bg-white rounded-[15px] space-y-2">
+    <div v-if="note.deleted" class="note-deleted text-center py-2">
+      <div class="note-deleted-text">Note was deleted</div>
       <n-button
-        v-for="tag in note.tags"
-        :key="tag"
         size="small"
-        round
-        class="custom-tag"
+        class="note-deleted-cancel"
+        @click="handleCancelClick"
+        >Cancel</n-button
       >
-        {{ tag }}
-      </n-button>
     </div>
-    <div class="note-footer flex justify-between items-center mt-1">
-      <div class="note-time clickable-link" @click="handleTimeClick(note)">
-        {{ formatTime(note.createdAt) }}
+    <div v-else>
+      <div v-if="note.parentId" class="note-reply p-2 rounded-[10px]">
+        <span class="note-reply-link" @click="handleReplyClick(note)">
+          {{ note.parentTextPreview }}
+        </span>
       </div>
-      <div class="note-stats flex items-center text-gray-600 space-x-1">
+      <div class="note-text text-2xl break-words">
+        {{ note.text }}
+      </div>
+      <div v-if="note.tags" class="note-tags text-gray-600 space-x-1 mb-[5px]">
         <n-button
-          v-if="note.replyCount > 0"
-          text
-          class="inline-flex items-center faded-text"
-          @click="handleChatClick(note)"
+          v-for="tag in note.tags"
+          :key="tag"
+          size="small"
+          round
+          class="custom-tag"
         >
-          <n-icon class="icon-margin faded-text">
-            <Reply />
-          </n-icon>
-          <span class="faded-text">
-            {{ note.replyCount }}
-          </span>
+          {{ tag }}
         </n-button>
-        <n-dropdown
-          trigger="click"
-          placement="bottom-end"
-          :options="dropdownOptions"
-          @select="handleDropdownCommand"
-        >
-          <n-button text class="inline-flex items-center faded-text">
-            <n-icon><More /></n-icon>
+      </div>
+      <div class="note-footer flex justify-between items-center mt-1">
+        <div class="note-time clickable-link" @click="handleTimeClick(note)">
+          {{ formatTime(note.createdAt) }}
+        </div>
+        <div class="note-stats flex items-center text-gray-600 space-x-1">
+          <n-button
+            v-if="note.replyCount > 0"
+            text
+            class="inline-flex items-center faded-text"
+            @click="handleChatClick(note)"
+          >
+            <n-icon class="icon-margin faded-text">
+              <Reply />
+            </n-icon>
+            <span class="faded-text">
+              {{ note.replyCount }}
+            </span>
           </n-button>
-        </n-dropdown>
+          <n-dropdown
+            trigger="click"
+            placement="bottom-end"
+            :options="dropdownOptions"
+            @select="handleDropdownCommand"
+          >
+            <n-button text class="inline-flex items-center faded-text">
+              <n-icon><More /></n-icon>
+            </n-button>
+          </n-dropdown>
+        </div>
       </div>
     </div>
   </div>
@@ -101,6 +112,9 @@ export default {
     handleDropdownCommand(key) {
       this.$emit('dropdown-command', key, this.note)
     },
+    handleCancelClick() {
+      // Currently does nothing
+    },
   },
 }
 </script>
@@ -108,10 +122,26 @@ export default {
 <style scoped>
 .note {
   border-radius: 15px;
-  padding: 10px 12px 5px 12px;
+  padding: 8px 12px;
   background-color: var(--block-color);
   position: relative;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.note-deleted {
+  text-align: center;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.note-deleted-text {
+  font-size: 16px;
+  color: var(--text-color);
+  font-weight: normal;
+}
+
+.note-deleted-cancel {
+  margin-top: 8px;
 }
 
 .note-reply {
@@ -143,7 +173,7 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 .note-stats {

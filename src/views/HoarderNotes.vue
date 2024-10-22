@@ -54,6 +54,7 @@ import {
   NCol,
   NButton,
   NIcon,
+  useDialog,
 } from 'naive-ui'
 import { SunnyOutline as Sunny, MoonOutline as Moon } from '@vicons/ionicons5'
 import { computed, ref } from 'vue'
@@ -90,8 +91,32 @@ export default {
       toggleDark()
     }
 
+    const dialog = useDialog()
+
     const handleDropdownCommand = (command, note) => {
-      console.log(`${command} clicked`, note)
+      if (command === 'delete') {
+        dialog.warning({
+          title: 'Confirm Deletion',
+          content: 'Are you sure you want to delete this note?',
+          positiveText: 'Yes',
+          negativeText: 'No',
+          onPositiveClick: () => {
+            deleteNote(note)
+          },
+        })
+      } else {
+        console.log(`${command} clicked`, note)
+      }
+    }
+
+    const deleteNote = async (note) => {
+      try {
+        await api.delete(`/api/Notes/${note.id}`)
+        // After successful deletion, replace the note with an empty note displaying "Note was deleted" and a Cancel button
+        note.deleted = true
+      } catch (error) {
+        console.error('Error deleting note:', error)
+      }
     }
 
     const handleReplyClick = (note) => {
