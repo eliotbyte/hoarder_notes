@@ -1,24 +1,16 @@
 <template>
-  <div class="note bg-white rounded-[15px] space-y-2">
-    <div v-if="note.deleted" class="note-deleted text-center py-2">
-      <div class="note-deleted-text">Note was deleted</div>
-      <n-button
-        size="small"
-        class="note-deleted-cancel"
-        @click="handleCancelClick"
-        >Cancel</n-button
-      >
-    </div>
-    <div v-else>
-      <div v-if="note.parentId" class="note-reply p-2 rounded-[10px]">
+  <div class="note">
+    <!-- Note content -->
+    <div :class="['note-content', { blurred: note.deleted }]">
+      <div v-if="note.parentId" class="note-reply">
         <span class="note-reply-link" @click="handleReplyClick(note)">
           {{ note.parentTextPreview }}
         </span>
       </div>
-      <div class="note-text text-2xl break-words">
+      <div class="note-text">
         {{ note.text }}
       </div>
-      <div v-if="note.tags" class="note-tags text-gray-600 space-x-1 mb-[5px]">
+      <div v-if="note.tags" class="note-tags">
         <n-button
           v-for="tag in note.tags"
           :key="tag"
@@ -29,11 +21,11 @@
           {{ tag }}
         </n-button>
       </div>
-      <div class="note-footer flex justify-between items-center mt-1">
+      <div class="note-footer">
         <div class="note-time clickable-link" @click="handleTimeClick(note)">
           {{ formatTime(note.createdAt) }}
         </div>
-        <div class="note-stats flex items-center text-gray-600 space-x-1">
+        <div class="note-stats">
           <n-button
             v-if="note.replyCount > 0"
             text
@@ -58,6 +50,19 @@
             </n-button>
           </n-dropdown>
         </div>
+      </div>
+    </div>
+
+    <!-- Overlay for deleted note -->
+    <div v-if="note.deleted" class="note-overlay">
+      <div class="note-overlay-content">
+        <div class="note-deleted-text">Note was deleted</div>
+        <n-button
+          size="small"
+          class="note-deleted-cancel"
+          @click="handleCancelClick"
+          >Cancel</n-button
+        >
       </div>
     </div>
   </div>
@@ -113,7 +118,7 @@ export default {
       this.$emit('dropdown-command', key, this.note)
     },
     handleCancelClick() {
-      // Currently does nothing
+      // Implement undo delete functionality if needed
     },
   },
 }
@@ -121,21 +126,43 @@ export default {
 
 <style scoped>
 .note {
+  position: relative;
   border-radius: 15px;
   padding: 8px 12px;
   background-color: var(--block-color);
-  position: relative;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.05);
+  overflow: hidden; /* Ensure child elements are clipped to border radius */
 }
 
-.note-deleted {
+.note-content {
+  /* No changes needed here */
+}
+
+.blurred {
+  filter: blur(2px);
+}
+
+.note-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(var(--block-color-rgb), 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  border-radius: inherit; /* Inherit border radius from parent */
+  z-index: 1; /* Ensure it sits above the content */
+}
+
+.note-overlay-content {
   text-align: center;
-  padding-top: 8px;
-  padding-bottom: 8px;
 }
 
 .note-deleted-text {
-  font-size: 16px;
+  font-size: 20px;
   color: var(--text-color);
   font-weight: normal;
 }
@@ -167,6 +194,7 @@ export default {
 .note-tags {
   font-size: 16px;
   color: var(--text-color);
+  margin-bottom: 5px;
 }
 
 .note-footer {

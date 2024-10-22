@@ -4,6 +4,7 @@ html.dark {
   /* Background Colors */
   --bg-color: #191919;
   --block-color: #404040;
+  --block-color-rgb: 64, 64, 64;
   --text-color: #E5E5E5;
 
   /* New Color Variables */
@@ -26,6 +27,7 @@ html:not(.dark) {
   /* Light Mode Colors */
   --bg-color: #E5E5E5;
   --block-color: #F2F2F2;
+  --block-color-rgb: 242, 242, 242;
   --text-color: #333333;
 
   /* New Color Variables */
