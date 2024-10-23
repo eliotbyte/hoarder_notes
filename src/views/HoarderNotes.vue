@@ -134,6 +134,13 @@ export default {
         editingNote.value = { ...note }
         showNoteEdit.value = true
         unsavedChanges.value = false
+      } else if (command === 'reply') {
+        editingNote.value = {
+          parentId: note.id,
+          parentTextPreview: note.text,
+        }
+        showNoteEdit.value = true
+        unsavedChanges.value = false
       } else {
         console.log(`${command} clicked`, note)
       }
