@@ -6,6 +6,11 @@
           <h1 class="header-title">Hoarder Notes</h1>
         </div>
         <div class="header-right">
+          <n-button text @click="handleCreateNote">
+            <n-icon>
+              <CreateOutline />
+            </n-icon>
+          </n-button>
           <n-button text @click="handleToggleDark">
             <n-icon v-if="!isDark">
               <Sunny />
@@ -42,6 +47,16 @@
         </n-row>
       </n-layout-content>
     </n-layout>
+
+    <!-- NoteEdit Modal -->
+    <div v-if="showNoteEdit" class="overlay" @click.self="handleNoteEditCancel">
+      <NoteEdit
+        :note="editingNote"
+        @create="handleNoteEditCreate"
+        @cancel="handleNoteEditCancel"
+        @input="unsavedChanges = true"
+      />
+    </div>
   </div>
 </template>
 
@@ -56,11 +71,16 @@ import {
   NIcon,
   useDialog,
 } from 'naive-ui'
-import { SunnyOutline as Sunny, MoonOutline as Moon } from '@vicons/ionicons5'
+import {
+  SunnyOutline as Sunny,
+  MoonOutline as Moon,
+  CreateOutline,
+} from '@vicons/ionicons5'
 import { computed, ref } from 'vue'
 import { isDark, toggleDark } from '../composables'
 import { useInfiniteScroll } from '@vueuse/core'
 import NoteItem from '@/components/NoteItem.vue'
+import NoteEdit from '@/components/NoteEdit.vue'
 import api from '@/utils/api.js'
 
 export default {
@@ -75,7 +95,9 @@ export default {
     NIcon,
     Sunny,
     Moon,
+    CreateOutline,
     NoteItem,
+    NoteEdit,
   },
   setup() {
     const notes = ref([])
@@ -86,6 +108,10 @@ export default {
     const noMoreNotes = ref(false)
 
     const darkMode = computed(() => isDark.value)
+
+    const showNoteEdit = ref(false)
+    const editingNote = ref(null)
+    const unsavedChanges = ref(false)
 
     const handleToggleDark = () => {
       toggleDark()
@@ -104,6 +130,10 @@ export default {
             deleteNote(note)
           },
         })
+      } else if (command === 'edit') {
+        editingNote.value = { ...note }
+        showNoteEdit.value = true
+        unsavedChanges.value = false
       } else {
         console.log(`${command} clicked`, note)
       }
@@ -112,7 +142,6 @@ export default {
     const deleteNote = async (note) => {
       try {
         await api.delete(`/api/Notes/${note.id}`)
-        // After successful deletion, replace the note with an empty note displaying "Note was deleted" and a Cancel button
         note.deleted = true
       } catch (error) {
         console.error('Error deleting note:', error)
@@ -194,6 +223,67 @@ export default {
       immediate: false,
     })
 
+    const handleCreateNote = () => {
+      editingNote.value = {}
+      showNoteEdit.value = true
+      unsavedChanges.value = false
+    }
+
+    const handleNoteEditCancel = () => {
+      if (unsavedChanges.value) {
+        dialog.warning({
+          title: 'Unsaved Changes',
+          content: 'If you close, the entered data will be lost.',
+          positiveText: 'Close',
+          negativeText: 'Cancel',
+          onPositiveClick: () => {
+            showNoteEdit.value = false
+            editingNote.value = null
+            unsavedChanges.value = false
+          },
+        })
+      } else {
+        showNoteEdit.value = false
+        editingNote.value = null
+        unsavedChanges.value = false
+      }
+    }
+
+    const handleNoteEditCreate = (noteData) => {
+      if (editingNote.value && editingNote.value.id) {
+        // Update note
+        api
+          .put(`/api/Notes/${editingNote.value.id}`, noteData)
+          .then((response) => {
+            const index = notes.value.findIndex(
+              (n) => n.id === editingNote.value.id
+            )
+            if (index !== -1) {
+              notes.value.splice(index, 1, response.data)
+            }
+            showNoteEdit.value = false
+            editingNote.value = null
+            unsavedChanges.value = false
+          })
+          .catch((error) => {
+            console.error('Error updating note:', error)
+          })
+      } else {
+        // Create new note
+        api
+          .post('/api/Notes', noteData)
+          .then((response) => {
+            notes.value.unshift(response.data)
+            showNoteEdit.value = false
+            editingNote.value = null
+            unsavedChanges.value = false
+          })
+          .catch((error) => {
+            console.error('Error creating note:', error)
+          })
+      }
+    }
+
     return {
       isDark: darkMode,
       handleToggleDark,
@@ -205,6 +295,12 @@ export default {
       loading,
       loadMoreNotes,
       formatTime,
+      showNoteEdit,
+      handleCreateNote,
+      handleNoteEditCancel,
+      handleNoteEditCreate,
+      unsavedChanges,
+      editingNote,
     }
   },
 }
@@ -237,5 +333,18 @@ export default {
 .n-icon {
   font-size: 24px;
   color: var(--text-color);
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
 }
 </style>
