@@ -17,11 +17,12 @@
 
       <!-- Note Text Input -->
       <n-input
-        v-model="text"
+        :value="text"
         type="textarea"
         placeholder="Enter text..."
         autosize
         class="note-text-input"
+        @update:value="text = $event"
         @input="emitInput"
       />
 
