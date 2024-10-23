@@ -136,6 +136,22 @@ export default {
     },
   },
   watch: {
+    note: {
+      handler(newNote) {
+        this.text = newNote?.text || ''
+        this.tags = newNote?.tags ? [...newNote.tags] : []
+        this.tagInput = ''
+        this.reply = newNote?.parentId
+          ? {
+              id: newNote.parentId,
+              textPreview: newNote.parentTextPreview,
+            }
+          : null
+        this.editing = !!newNote?.id
+      },
+      immediate: true,
+      deep: true,
+    },
     text() {
       this.emitInput()
     },
