@@ -36,7 +36,8 @@
                 :note="note"
                 :format-time="formatTime"
                 :parent-note="note.parentNote"
-                :mode="note.isEditing ? 'edit' : 'view'"
+                :mode="note.mode || 'view'"
+                :index="index"
                 @create-note="handleCreateNote"
                 @update-note="handleUpdateNote"
                 @cancel-create="handleCancelCreate"
@@ -120,7 +121,7 @@ export default {
           },
         })
       } else if (command === 'edit') {
-        note.isEditing = true
+        note.mode = 'edit'
       } else if (command === 'reply') {
         const index = notes.value.findIndex((n) => n.id === note.id)
         if (index !== -1) {
@@ -132,6 +133,8 @@ export default {
             notes.value.splice(index + 1, 0, {
               isReply: true,
               parentNote: note,
+              mode: 'create',
+              note: {},
             })
           }
         }
@@ -211,7 +214,7 @@ export default {
         }
 
         notes.value.push(
-          ...response.data.map((note) => ({ ...note, isEditing: false }))
+          ...response.data.map((note) => ({ ...note, mode: 'view' }))
         )
         page.value += 1
       } catch (error) {
@@ -226,17 +229,13 @@ export default {
       immediate: false,
     })
 
-    const handleCreateNote = (noteData, noteItem) => {
+    const handleCreateNote = (noteData, index) => {
       api
         .post('/api/Notes', noteData)
         .then((response) => {
-          if (noteItem.parentNote) {
+          if (notes.value[index].isReply) {
             // This is a reply to a note
-            const index = notes.value.findIndex((n) => n === noteItem)
-            if (index !== -1) {
-              notes.value.splice(index, 1)
-              notes.value.splice(index, 0, response.data)
-            }
+            notes.value.splice(index, 1, { ...response.data, mode: 'view' })
           } else {
             // This is a new note
             notes.value.unshift(response.data)
@@ -252,16 +251,15 @@ export default {
         .put(`/api/Notes/${note.id}`, noteData)
         .then(() => {
           Object.assign(note, noteData)
-          note.isEditing = false
+          note.mode = 'view'
         })
         .catch((error) => {
           console.error('Error updating note:', error)
         })
     }
 
-    const handleCancelCreate = (noteItem) => {
-      const index = notes.value.findIndex((n) => n === noteItem)
-      if (index !== -1) {
+    const handleCancelCreate = (index) => {
+      if (notes.value[index].isReply) {
         notes.value.splice(index, 1)
       }
     }
