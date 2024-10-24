@@ -6,17 +6,12 @@
           <h1 class="header-title">Hoarder Notes</h1>
         </div>
         <div class="header-right">
-          <n-button text @click="handleCreateNote">
-            <n-icon>
-              <CreateOutline />
-            </n-icon>
-          </n-button>
           <n-button text @click="handleToggleDark">
             <n-icon v-if="!isDark">
-              <Sunny />
+              <SunnyIcon />
             </n-icon>
             <n-icon v-else>
-              <Moon />
+              <MoonIcon />
             </n-icon>
           </n-button>
         </div>
@@ -28,11 +23,23 @@
           </n-col>
           <n-col :span="12">
             <div class="grid-content p-4 grid gap-6">
+              <!-- Empty NoteItem for creating new note -->
               <NoteItem
-                v-for="note in notes"
-                :key="note.id"
+                :note="{}"
+                mode="create"
+                :format-time="formatTime"
+                @create-note="handleCreateNote"
+              />
+              <NoteItem
+                v-for="(note, index) in notes"
+                :key="note.id || `reply-${index}`"
                 :note="note"
                 :format-time="formatTime"
+                :parent-note="note.parentNote"
+                :mode="note.isEditing ? 'edit' : 'view'"
+                @create-note="handleCreateNote"
+                @update-note="handleUpdateNote"
+                @cancel-create="handleCancelCreate"
                 @reply-click="handleReplyClick"
                 @chat-click="handleChatClick"
                 @time-click="handleTimeClick"
@@ -47,16 +54,6 @@
         </n-row>
       </n-layout-content>
     </n-layout>
-
-    <!-- NoteEdit Modal -->
-    <div v-if="showNoteEdit" class="overlay" @click.self="handleNoteEditCancel">
-      <NoteEdit
-        :note="editingNote"
-        @create="handleNoteEditCreate"
-        @cancel="handleNoteEditCancel"
-        @input="unsavedChanges = true"
-      />
-    </div>
   </div>
 </template>
 
@@ -72,15 +69,13 @@ import {
   useDialog,
 } from 'naive-ui'
 import {
-  SunnyOutline as Sunny,
-  MoonOutline as Moon,
-  CreateOutline,
+  SunnyOutline as SunnyIcon,
+  MoonOutline as MoonIcon,
 } from '@vicons/ionicons5'
 import { computed, ref } from 'vue'
 import { isDark, toggleDark } from '../composables'
 import { useInfiniteScroll } from '@vueuse/core'
 import NoteItem from '@/components/NoteItem.vue'
-import NoteEdit from '@/components/NoteEdit.vue'
 import api from '@/utils/api.js'
 
 export default {
@@ -93,11 +88,9 @@ export default {
     NCol,
     NButton,
     NIcon,
-    Sunny,
-    Moon,
-    CreateOutline,
+    SunnyIcon,
+    MoonIcon,
     NoteItem,
-    NoteEdit,
   },
   setup() {
     const notes = ref([])
@@ -108,10 +101,6 @@ export default {
     const noMoreNotes = ref(false)
 
     const darkMode = computed(() => isDark.value)
-
-    const showNoteEdit = ref(false)
-    const editingNote = ref(null)
-    const unsavedChanges = ref(false)
 
     const handleToggleDark = () => {
       toggleDark()
@@ -131,16 +120,21 @@ export default {
           },
         })
       } else if (command === 'edit') {
-        editingNote.value = { ...note }
-        showNoteEdit.value = true
-        unsavedChanges.value = false
+        note.isEditing = true
       } else if (command === 'reply') {
-        editingNote.value = {
-          parentId: note.id,
-          parentTextPreview: note.text,
+        const index = notes.value.findIndex((n) => n.id === note.id)
+        if (index !== -1) {
+          // Check if a reply NoteItem already exists
+          if (
+            !notes.value[index + 1] ||
+            notes.value[index + 1].isReply !== true
+          ) {
+            notes.value.splice(index + 1, 0, {
+              isReply: true,
+              parentNote: note,
+            })
+          }
         }
-        showNoteEdit.value = true
-        unsavedChanges.value = false
       } else {
         console.log(`${command} clicked`, note)
       }
@@ -216,7 +210,9 @@ export default {
           noMoreNotes.value = true
         }
 
-        notes.value.push(...response.data)
+        notes.value.push(
+          ...response.data.map((note) => ({ ...note, isEditing: false }))
+        )
         page.value += 1
       } catch (error) {
         console.error('Error loading notes:', error)
@@ -230,65 +226,43 @@ export default {
       immediate: false,
     })
 
-    const handleCreateNote = () => {
-      editingNote.value = {}
-      showNoteEdit.value = true
-      unsavedChanges.value = false
-    }
-
-    const handleNoteEditCancel = () => {
-      if (unsavedChanges.value) {
-        dialog.warning({
-          title: 'Unsaved Changes',
-          content: 'If you close, the entered data will be lost.',
-          positiveText: 'Close',
-          negativeText: 'Cancel',
-          onPositiveClick: () => {
-            showNoteEdit.value = false
-            editingNote.value = null
-            unsavedChanges.value = false
-          },
-        })
-      } else {
-        showNoteEdit.value = false
-        editingNote.value = null
-        unsavedChanges.value = false
-      }
-    }
-
-    const handleNoteEditCreate = (noteData) => {
-      if (editingNote.value && editingNote.value.id) {
-        // Update note
-        api
-          .put(`/api/Notes/${editingNote.value.id}`, noteData)
-          .then(() => {
-            const index = notes.value.findIndex(
-              (n) => n.id === editingNote.value.id
-            )
+    const handleCreateNote = (noteData, noteItem) => {
+      api
+        .post('/api/Notes', noteData)
+        .then((response) => {
+          if (noteItem.parentNote) {
+            // This is a reply to a note
+            const index = notes.value.findIndex((n) => n === noteItem)
             if (index !== -1) {
-              // Update the existing note object with the new data
-              Object.assign(notes.value[index], noteData)
+              notes.value.splice(index, 1)
+              notes.value.splice(index, 0, response.data)
             }
-            showNoteEdit.value = false
-            editingNote.value = null
-            unsavedChanges.value = false
-          })
-          .catch((error) => {
-            console.error('Error updating note:', error)
-          })
-      } else {
-        // Create new note
-        api
-          .post('/api/Notes', noteData)
-          .then((response) => {
+          } else {
+            // This is a new note
             notes.value.unshift(response.data)
-            showNoteEdit.value = false
-            editingNote.value = null
-            unsavedChanges.value = false
-          })
-          .catch((error) => {
-            console.error('Error creating note:', error)
-          })
+          }
+        })
+        .catch((error) => {
+          console.error('Error creating note:', error)
+        })
+    }
+
+    const handleUpdateNote = (noteData, note) => {
+      api
+        .put(`/api/Notes/${note.id}`, noteData)
+        .then(() => {
+          Object.assign(note, noteData)
+          note.isEditing = false
+        })
+        .catch((error) => {
+          console.error('Error updating note:', error)
+        })
+    }
+
+    const handleCancelCreate = (noteItem) => {
+      const index = notes.value.findIndex((n) => n === noteItem)
+      if (index !== -1) {
+        notes.value.splice(index, 1)
       }
     }
 
@@ -303,12 +277,9 @@ export default {
       loading,
       loadMoreNotes,
       formatTime,
-      showNoteEdit,
       handleCreateNote,
-      handleNoteEditCancel,
-      handleNoteEditCreate,
-      unsavedChanges,
-      editingNote,
+      handleUpdateNote,
+      handleCancelCreate,
     }
   },
 }
@@ -341,18 +312,5 @@ export default {
 .n-icon {
   font-size: 24px;
   color: var(--text-color);
-}
-
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
 }
 </style>
