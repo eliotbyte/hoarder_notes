@@ -173,7 +173,7 @@ export default {
   props: {
     mode: {
       type: String,
-      default: 'view', // 'view', 'create', or 'edit'
+      default: 'view',
     },
     note: {
       type: Object,
@@ -256,7 +256,6 @@ export default {
     mode(newVal) {
       if (newVal === 'edit') {
         this.editingState = true
-        // Save initial state
         this.initialText = this.text
         this.initialTags = [...this.tags]
       } else if (newVal === 'view') {
@@ -264,11 +263,14 @@ export default {
       }
     },
   },
+  setup() {
+    const dialog = useDialog()
+    return { dialog }
+  },
   methods: {
     switchToEditMode() {
       this.editingState = true
       this.isPlaceholder = false
-      // Save initial state
       this.initialText = this.text
       this.initialTags = [...this.tags]
     },
@@ -318,8 +320,7 @@ export default {
     },
     handleCancelClick() {
       if (this.hasUnsavedChanges) {
-        const dialog = useDialog()
-        dialog.warning({
+        this.dialog.warning({
           title: 'Unsaved Changes',
           content:
             'Changes you made may not be saved. Do you want to continue?',
@@ -337,7 +338,6 @@ export default {
       if (this.mode === 'create' && this.parentNote) {
         this.$emit('cancel-create', this.index)
       } else if (this.mode === 'create') {
-        // Clear fields and switch back to placeholder
         this.text = ''
         this.tags = []
         this.tagInput = ''
@@ -345,15 +345,13 @@ export default {
         this.editingState = false
         this.isPlaceholder = true
       } else {
-        // Revert changes and switch back to view mode
         this.text = this.initialText
         this.tags = [...this.initialTags]
         this.switchToViewMode()
       }
     },
     handleRemoveReply() {
-      const dialog = useDialog()
-      dialog.warning({
+      this.dialog.warning({
         title: 'Confirm Removal',
         content: 'Are you sure you want to remove the reply?',
         positiveText: 'Yes',
