@@ -261,12 +261,13 @@ export default {
         // Update note
         api
           .put(`/api/Notes/${editingNote.value.id}`, noteData)
-          .then((response) => {
+          .then(() => {
             const index = notes.value.findIndex(
               (n) => n.id === editingNote.value.id
             )
             if (index !== -1) {
-              notes.value.splice(index, 1, response.data)
+              // Update the existing note object with the new data
+              Object.assign(notes.value[index], noteData)
             }
             showNoteEdit.value = false
             editingNote.value = null
