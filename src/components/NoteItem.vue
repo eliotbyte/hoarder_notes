@@ -1,7 +1,87 @@
 <template>
   <div class="note">
+    <!-- Placeholder for Create Mode -->
+    <div v-if="isPlaceholder">
+      <div class="note-placeholder" @click="switchToEditMode">
+        Enter text...
+      </div>
+    </div>
+
+    <!-- Edit/Create Mode -->
+    <div v-else-if="isEditing">
+      <div class="note-content">
+        <!-- Reply Block (Hide in Reply Edit Mode) -->
+        <div v-if="showReplyBlock" class="note-reply">
+          <span class="note-reply-link" @click="handleReplyClick(reply)">
+            {{ reply.textPreview }}
+          </span>
+          <n-icon
+            size="20"
+            class="note-reply-remove-icon"
+            @click="handleRemoveReply"
+          >
+            <CloseIcon />
+          </n-icon>
+        </div>
+
+        <!-- Note Text Input -->
+        <n-input
+          :value="text"
+          type="textarea"
+          placeholder="Enter text..."
+          autosize
+          :maxlength="CHARACTER_LIMIT"
+          class="note-text-input"
+          @update:value="updateText"
+          @input="emitInput"
+        />
+
+        <!-- Character Count -->
+        <div v-if="showCharacterCount" class="character-count">
+          {{ text.length }} / {{ CHARACTER_LIMIT }}
+        </div>
+
+        <!-- Tags Input -->
+        <div class="note-tags">
+          <div class="tags-input">
+            <div v-for="(tag, index) in tags" :key="index" class="tag">
+              <span class="tag-text" @click="editTag(index)">{{ tag }}</span>
+              <n-icon
+                size="16"
+                class="tag-remove-icon"
+                @click="removeTag(index)"
+              >
+                <CloseIcon />
+              </n-icon>
+            </div>
+            <input
+              v-model="tagInput"
+              @keydown.space.prevent="addTag"
+              @input="emitInput"
+              placeholder="Enter tags..."
+              class="tag-input-field"
+            />
+          </div>
+        </div>
+
+        <!-- Save and Cancel Buttons -->
+        <div class="note-footer">
+          <div class="note-footer-buttons">
+            <n-button @click="handleCancelClick">Cancel</n-button>
+            <n-button
+              type="primary"
+              :disabled="text.length > CHARACTER_LIMIT"
+              @click="handleSave"
+            >
+              {{ mode === 'edit' ? 'Update' : 'Create' }}
+            </n-button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- View Mode -->
-    <div v-if="!isEditing && !isReplying">
+    <div v-else>
       <!-- Note content -->
       <div :class="['note-content', { blurred: note.deleted }]">
         <div v-if="note.parentId" class="note-reply">
@@ -68,84 +148,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Placeholder for Create Mode -->
-    <div v-else-if="mode === 'create' && !isEditing">
-      <div class="note-placeholder" @click="switchToEditMode">
-        Enter text...
-      </div>
-    </div>
-
-    <!-- Edit/Create Mode -->
-    <div v-else>
-      <div class="note-content">
-        <!-- Reply Block -->
-        <div v-if="reply" class="note-reply">
-          <span class="note-reply-link" @click="handleReplyClick(reply)">
-            {{ reply.textPreview }}
-          </span>
-          <n-icon
-            size="20"
-            class="note-reply-remove-icon"
-            @click="handleRemoveReply"
-          >
-            <CloseIcon />
-          </n-icon>
-        </div>
-
-        <!-- Note Text Input -->
-        <n-input
-          :value="text"
-          type="textarea"
-          placeholder="Enter text..."
-          autosize
-          :maxlength="CHARACTER_LIMIT"
-          class="note-text-input"
-          @update:value="updateText"
-          @input="emitInput"
-        />
-
-        <!-- Character Count -->
-        <div v-if="showCharacterCount" class="character-count">
-          {{ text.length }} / {{ CHARACTER_LIMIT }}
-        </div>
-
-        <!-- Tags Input -->
-        <div class="note-tags">
-          <div class="tags-input">
-            <div v-for="(tag, index) in tags" :key="index" class="tag">
-              <span class="tag-text" @click="editTag(index)">{{ tag }}</span>
-              <n-icon
-                size="16"
-                class="tag-remove-icon"
-                @click="removeTag(index)"
-              >
-                <CloseIcon />
-              </n-icon>
-            </div>
-            <input
-              v-model="tagInput"
-              @keydown.space.prevent="addTag"
-              @input="emitInput"
-              placeholder="Enter tags..."
-              class="tag-input-field"
-            />
-          </div>
-        </div>
-
-        <!-- Save and Cancel Buttons -->
-        <div class="note-footer">
-          <n-button
-            type="primary"
-            :disabled="text.length > CHARACTER_LIMIT"
-            @click="handleSave"
-          >
-            {{ mode === 'edit' ? 'Update' : 'Create' }}
-          </n-button>
-          <n-button @click="handleCancelClick">Cancel</n-button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -185,6 +187,10 @@ export default {
       type: Object,
       default: null,
     },
+    index: {
+      type: Number,
+      default: null,
+    },
   },
   emits: [
     'reply-click',
@@ -194,6 +200,7 @@ export default {
     'create-note',
     'update-note',
     'cancel-create',
+    'unsaved-changes',
   ],
   data() {
     return {
@@ -211,26 +218,61 @@ export default {
               textPreview: this.note.parentTextPreview,
             }
           : null,
-      isEditing: this.mode === 'edit' || this.mode === 'create',
+      editingState:
+        this.mode === 'edit' || (this.mode === 'create' && this.parentNote),
+      isPlaceholder: this.mode === 'create' && !this.parentNote,
       CHARACTER_LIMIT: 1000,
       dropdownOptions: [
         { label: 'Reply', key: 'reply' },
         { label: 'Edit', key: 'edit' },
         { label: 'Delete', key: 'delete' },
       ],
+      initialText: this.note?.text || '',
+      initialTags: this.note?.tags ? [...this.note.tags] : [],
     }
   },
   computed: {
+    isEditing() {
+      return this.editingState
+    },
     showCharacterCount() {
       return this.text.length >= this.CHARACTER_LIMIT * 0.8
+    },
+    hasUnsavedChanges() {
+      return (
+        this.text !== this.initialText ||
+        JSON.stringify(this.tags) !== JSON.stringify(this.initialTags)
+      )
+    },
+    isReplyNote() {
+      return !!this.parentNote
+    },
+    showReplyBlock() {
+      return this.reply && !this.isReplyNote
+    },
+  },
+  watch: {
+    mode(newVal) {
+      if (newVal === 'edit') {
+        this.editingState = true
+        // Save initial state
+        this.initialText = this.text
+        this.initialTags = [...this.tags]
+      } else if (newVal === 'view') {
+        this.editingState = false
+      }
     },
   },
   methods: {
     switchToEditMode() {
-      this.isEditing = true
+      this.editingState = true
+      this.isPlaceholder = false
+      // Save initial state
+      this.initialText = this.text
+      this.initialTags = [...this.tags]
     },
     switchToViewMode() {
-      this.isEditing = false
+      this.editingState = false
     },
     handleReplyClick(note) {
       this.$emit('reply-click', note)
@@ -256,22 +298,55 @@ export default {
       }
       if (this.mode === 'edit' || this.note.id) {
         // Update note
-        this.$emit('update-note', noteData, this.note)
+        this.$emit('update-note', noteData, this.note, this.index)
         this.switchToViewMode()
       } else {
         // Create new note
-        this.$emit('create-note', noteData, this)
+        this.$emit('create-note', noteData, this.index)
         this.text = ''
         this.tags = []
         this.tagInput = ''
         this.reply = null
-        this.isEditing = false
+        if (!this.parentNote) {
+          // This is the empty note at the top
+          this.editingState = false
+          this.isPlaceholder = true
+        }
+        // For replies, keep in editing mode until replaced
       }
     },
     handleCancelClick() {
-      if (this.mode === 'create' && this.parentNote) {
-        this.$emit('cancel-create', this)
+      if (this.hasUnsavedChanges) {
+        const dialog = useDialog()
+        dialog.warning({
+          title: 'Unsaved Changes',
+          content:
+            'Changes you made may not be saved. Do you want to continue?',
+          positiveText: 'Yes',
+          negativeText: 'No',
+          onPositiveClick: () => {
+            this.discardChanges()
+          },
+        })
       } else {
+        this.discardChanges()
+      }
+    },
+    discardChanges() {
+      if (this.mode === 'create' && this.parentNote) {
+        this.$emit('cancel-create', this.index)
+      } else if (this.mode === 'create') {
+        // Clear fields and switch back to placeholder
+        this.text = ''
+        this.tags = []
+        this.tagInput = ''
+        this.reply = null
+        this.editingState = false
+        this.isPlaceholder = true
+      } else {
+        // Revert changes and switch back to view mode
+        this.text = this.initialText
+        this.tags = [...this.initialTags]
         this.switchToViewMode()
       }
     },
@@ -397,6 +472,12 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-top: 8px;
+}
+
+.note-footer-buttons {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .note-stats {
