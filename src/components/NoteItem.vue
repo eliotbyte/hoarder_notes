@@ -83,7 +83,7 @@
     <!-- View Mode -->
     <div v-else>
       <!-- Note content -->
-      <div :class="['note-content', { blurred: note.deleted }]">
+      <div :class="['note-content', { blurred: note.isDeleted }]">
         <div v-if="note.parentId" class="note-reply">
           <span class="note-reply-link" @click="handleReplyClick(note)">
             {{ note.parentTextPreview }}
@@ -136,13 +136,13 @@
       </div>
 
       <!-- Overlay for deleted note -->
-      <div v-if="note.deleted" class="note-overlay">
+      <div v-if="note.isDeleted" class="note-overlay">
         <div class="note-overlay-content">
           <div class="note-deleted-text">Note was deleted</div>
           <n-button
             size="small"
             class="note-deleted-cancel"
-            @click="handleCancelClick"
+            @click="handleRestoreClick"
             >Cancel</n-button
           >
         </div>
@@ -201,6 +201,7 @@ export default {
     'update-note',
     'cancel-create',
     'unsaved-changes',
+    'restore-note',
   ],
   data() {
     return {
@@ -361,6 +362,9 @@ export default {
           this.reply = null
         },
       })
+    },
+    handleRestoreClick() {
+      this.$emit('restore-note', this.note, this.index)
     },
     addTag() {
       if (this.tagInput.trim()) {

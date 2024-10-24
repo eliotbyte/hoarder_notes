@@ -45,6 +45,7 @@
                 @chat-click="handleChatClick"
                 @time-click="handleTimeClick"
                 @dropdown-command="handleDropdownCommand"
+                @restore-note="handleRestoreNote"
               />
               <div v-if="loading">Loading...</div>
             </div>
@@ -146,10 +147,21 @@ export default {
     const deleteNote = async (note) => {
       try {
         await api.delete(`/api/Notes/${note.id}`)
-        note.deleted = true
+        note.isDeleted = true
       } catch (error) {
         console.error('Error deleting note:', error)
       }
+    }
+
+    const handleRestoreNote = (note, index) => {
+      api
+        .post(`/api/Notes/restore/${note.id}`)
+        .then((response) => {
+          notes.value[index] = { ...response.data, mode: 'view' }
+        })
+        .catch((error) => {
+          console.error('Error restoring note:', error)
+        })
     }
 
     const handleReplyClick = (note) => {
@@ -233,12 +245,12 @@ export default {
       api
         .post('/api/Notes', noteData)
         .then((response) => {
-          if (notes.value[index].isReply) {
+          if (notes.value[index] && notes.value[index].isReply) {
             // This is a reply to a note
             notes.value.splice(index, 1, { ...response.data, mode: 'view' })
           } else {
             // This is a new note
-            notes.value.unshift(response.data)
+            notes.value.unshift({ ...response.data, mode: 'view' })
           }
         })
         .catch((error) => {
@@ -249,8 +261,8 @@ export default {
     const handleUpdateNote = (noteData, note) => {
       api
         .put(`/api/Notes/${note.id}`, noteData)
-        .then(() => {
-          Object.assign(note, noteData)
+        .then((response) => {
+          Object.assign(note, response.data)
           note.mode = 'view'
         })
         .catch((error) => {
@@ -278,6 +290,7 @@ export default {
       handleCreateNote,
       handleUpdateNote,
       handleCancelCreate,
+      handleRestoreNote,
     }
   },
 }
