@@ -1,22 +1,8 @@
 <template>
   <div class="common-layout">
     <n-layout>
-      <n-layout-header class="header">
-        <div class="header-left">
-          <h1 class="header-title">Hoarder Notes</h1>
-        </div>
-        <div class="header-right">
-          <n-button text @click="handleToggleDark">
-            <n-icon v-if="!isDark">
-              <SunnyIcon />
-            </n-icon>
-            <n-icon v-else>
-              <MoonIcon />
-            </n-icon>
-          </n-button>
-        </div>
-      </n-layout-header>
-      <n-layout-content>
+      <HoarderHeader />
+      <n-layout-content class="layout-content">
         <n-row :gutter="30">
           <n-col :span="6">
             <div class="grid-content" />
@@ -60,39 +46,22 @@
 </template>
 
 <script>
-import {
-  NLayout,
-  NLayoutHeader,
-  NLayoutContent,
-  NRow,
-  NCol,
-  NButton,
-  NIcon,
-  useDialog,
-} from 'naive-ui'
-import {
-  SunnyOutline as SunnyIcon,
-  MoonOutline as MoonIcon,
-} from '@vicons/ionicons5'
-import { computed, ref } from 'vue'
-import { isDark, toggleDark } from '../composables'
+import { NLayout, NLayoutContent, NRow, NCol, useDialog } from 'naive-ui'
+import { ref } from 'vue'
 import { useInfiniteScroll } from '@vueuse/core'
 import NoteItem from '@/components/NoteItem.vue'
+import HoarderHeader from '@/components/HoarderHeader.vue'
 import api from '@/utils/api.js'
 
 export default {
   name: 'HoarderNotes',
   components: {
     NLayout,
-    NLayoutHeader,
     NLayoutContent,
     NRow,
     NCol,
-    NButton,
-    NIcon,
-    SunnyIcon,
-    MoonIcon,
     NoteItem,
+    HoarderHeader,
   },
   setup() {
     const notes = ref([])
@@ -101,12 +70,6 @@ export default {
     const pageSize = ref(10)
     const lastNoteCreatedAt = ref('2025-10-02T02:06:51.619403')
     const noMoreNotes = ref(false)
-
-    const darkMode = computed(() => isDark.value)
-
-    const handleToggleDark = () => {
-      toggleDark()
-    }
 
     const dialog = useDialog()
 
@@ -277,8 +240,6 @@ export default {
     }
 
     return {
-      isDark: darkMode,
-      handleToggleDark,
       handleDropdownCommand,
       handleReplyClick,
       handleChatClick,
@@ -306,18 +267,8 @@ export default {
   color: var(--text-color);
 }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: var(--bg-color);
-  padding: 20px;
-  border-bottom: 1px solid #ccc;
-}
-
-.header-title {
-  font-size: 24px;
-  color: var(--text-color);
+.layout-content {
+  padding-top: 80px; /* Adjust according to header height */
 }
 
 .n-icon {
