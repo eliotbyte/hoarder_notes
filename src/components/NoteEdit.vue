@@ -21,10 +21,16 @@
         type="textarea"
         placeholder="Enter text..."
         autosize
+        :maxlength="CHARACTER_LIMIT"
         class="note-text-input"
-        @update:value="text = $event"
+        @update:value="updateText"
         @input="emitInput"
       />
+
+      <!-- Character Count -->
+      <div v-if="showCharacterCount" class="character-count">
+        {{ text.length }} / {{ CHARACTER_LIMIT }}
+      </div>
 
       <!-- Tags Input -->
       <div class="note-tags">
@@ -47,9 +53,13 @@
 
       <!-- Create and Cancel Buttons -->
       <div class="note-footer">
-        <n-button type="primary" @click="handleCreate">{{
-          editing ? 'Update' : 'Create'
-        }}</n-button>
+        <n-button
+          type="primary"
+          :disabled="text.length > CHARACTER_LIMIT"
+          @click="handleCreate"
+        >
+          {{ editing ? 'Update' : 'Create' }}
+        </n-button>
         <n-button @click="handleCancel">Cancel</n-button>
       </div>
     </div>
@@ -59,6 +69,7 @@
 <script>
 import { NButton, NInput, NIcon, useDialog } from 'naive-ui'
 import { Close } from '@vicons/ionicons5'
+import { CHARACTER_LIMIT } from '@/constants/limits' // Import from constants file
 
 export default {
   name: 'NoteEdit',
@@ -87,7 +98,13 @@ export default {
           }
         : null,
       editing: !!this.note?.id,
+      CHARACTER_LIMIT, // Use the constant
     }
+  },
+  computed: {
+    showCharacterCount() {
+      return this.text.length >= CHARACTER_LIMIT * 0.8
+    },
   },
   methods: {
     handleRemoveReply() {
@@ -135,6 +152,10 @@ export default {
     emitInput() {
       this.$emit('input')
     },
+    updateText(value) {
+      this.text = value
+      this.emitInput()
+    },
   },
   watch: {
     note: {
@@ -177,6 +198,15 @@ export default {
 .note-text-input {
   width: 100%;
   margin-top: 10px;
+  font-size: 20px;
+  border-radius: 10px;
+}
+
+.character-count {
+  text-align: right;
+  margin-top: 5px;
+  font-size: 14px;
+  color: var(--faded-text-color);
 }
 
 .tags-input {
