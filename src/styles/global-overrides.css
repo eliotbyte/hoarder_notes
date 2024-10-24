@@ -1,5 +1,3 @@
-/* ./src/styles/global-overrides.css */
-
 /* Dropdown Menu Background and Border */
 .el-dropdown-menu {
   background-color: var(--dropdown-bg-color) !important;
@@ -19,4 +17,14 @@
 /* Optional: Adjust Dropdown Menu Item Hover Text Color */
 .el-dropdown-menu__item:hover {
   color: var(--text-color) !important;
+}
+
+/* Override background color of n-layout-content */
+.n-layout-content {
+  background-color: var(--bg-color) !important;
+}
+
+/* Override background color of n-layout-scroll-container */
+.n-layout-scroll-container {
+  background-color: var(--bg-color) !important;
 }
