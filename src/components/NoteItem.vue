@@ -191,6 +191,10 @@ export default {
       type: Number,
       default: null,
     },
+    hideReplyBlock: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: [
     'reply-click',

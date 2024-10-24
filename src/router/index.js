@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HoarderAuth from '../views/HoarderAuth.vue';
 import HoarderNotes from '../views/HoarderNotes.vue';
+import HoarderSpecificNote from '../views/HoarderSpecificNote.vue';
 
 const routes = [
   {
@@ -16,6 +17,12 @@ const routes = [
     path: '/notes',
     name: 'HoarderNotes',
     component: HoarderNotes,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/notes/:id',
+    name: 'HoarderSpecificNote',
+    component: HoarderSpecificNote,
     meta: { requiresAuth: true }
   }
 ];
