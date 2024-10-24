@@ -1,78 +1,160 @@
 <template>
   <div class="note">
-    <!-- Note content -->
-    <div :class="['note-content', { blurred: note.deleted }]">
-      <div v-if="note.parentId" class="note-reply">
-        <span class="note-reply-link" @click="handleReplyClick(note)">
-          {{ note.parentTextPreview }}
-        </span>
-      </div>
-      <div class="note-text">
-        {{ note.text }}
-      </div>
-      <div v-if="note.tags" class="note-tags">
-        <n-button
-          v-for="tag in note.tags"
-          :key="tag"
-          size="small"
-          round
-          class="custom-tag"
-        >
-          {{ tag }}
-        </n-button>
-      </div>
-      <div class="note-footer">
-        <div class="note-time clickable-link" @click="handleTimeClick(note)">
-          {{ formatTime(note.createdAt) }}
+    <!-- View Mode -->
+    <div v-if="!isEditing && !isReplying">
+      <!-- Note content -->
+      <div :class="['note-content', { blurred: note.deleted }]">
+        <div v-if="note.parentId" class="note-reply">
+          <span class="note-reply-link" @click="handleReplyClick(note)">
+            {{ note.parentTextPreview }}
+          </span>
         </div>
-        <div class="note-stats">
+        <div class="note-text">
+          {{ note.text }}
+        </div>
+        <div v-if="note.tags" class="note-tags">
           <n-button
-            v-if="note.replyCount > 0"
-            text
-            class="inline-flex items-center faded-text"
-            @click="handleChatClick(note)"
+            v-for="tag in note.tags"
+            :key="tag"
+            size="small"
+            round
+            class="custom-tag"
           >
-            <n-icon class="icon-margin faded-text">
-              <Reply />
-            </n-icon>
-            <span class="faded-text">
-              {{ note.replyCount }}
-            </span>
+            {{ tag }}
           </n-button>
-          <n-dropdown
-            trigger="click"
-            placement="bottom-end"
-            :options="dropdownOptions"
-            @select="handleDropdownCommand"
-          >
-            <n-button text class="inline-flex items-center faded-text">
-              <n-icon><More /></n-icon>
+        </div>
+        <div class="note-footer">
+          <div class="note-time clickable-link" @click="handleTimeClick(note)">
+            {{ formatTime(note.createdAt) }}
+          </div>
+          <div class="note-stats">
+            <n-button
+              v-if="note.replyCount > 0"
+              text
+              class="inline-flex items-center faded-text"
+              @click="handleChatClick(note)"
+            >
+              <n-icon class="icon-margin faded-text">
+                <ReplyIcon />
+              </n-icon>
+              <span class="faded-text">
+                {{ note.replyCount }}
+              </span>
             </n-button>
-          </n-dropdown>
+            <n-dropdown
+              trigger="click"
+              placement="bottom-end"
+              :options="dropdownOptions"
+              @select="handleDropdownCommand"
+            >
+              <n-button text class="inline-flex items-center faded-text">
+                <n-icon><MoreIcon /></n-icon>
+              </n-button>
+            </n-dropdown>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overlay for deleted note -->
+      <div v-if="note.deleted" class="note-overlay">
+        <div class="note-overlay-content">
+          <div class="note-deleted-text">Note was deleted</div>
+          <n-button
+            size="small"
+            class="note-deleted-cancel"
+            @click="handleCancelClick"
+            >Cancel</n-button
+          >
         </div>
       </div>
     </div>
 
-    <!-- Overlay for deleted note -->
-    <div v-if="note.deleted" class="note-overlay">
-      <div class="note-overlay-content">
-        <div class="note-deleted-text">Note was deleted</div>
-        <n-button
-          size="small"
-          class="note-deleted-cancel"
-          @click="handleCancelClick"
-          >Cancel</n-button
-        >
+    <!-- Placeholder for Create Mode -->
+    <div v-else-if="mode === 'create' && !isEditing">
+      <div class="note-placeholder" @click="switchToEditMode">
+        Enter text...
+      </div>
+    </div>
+
+    <!-- Edit/Create Mode -->
+    <div v-else>
+      <div class="note-content">
+        <!-- Reply Block -->
+        <div v-if="reply" class="note-reply">
+          <span class="note-reply-link" @click="handleReplyClick(reply)">
+            {{ reply.textPreview }}
+          </span>
+          <n-icon
+            size="20"
+            class="note-reply-remove-icon"
+            @click="handleRemoveReply"
+          >
+            <CloseIcon />
+          </n-icon>
+        </div>
+
+        <!-- Note Text Input -->
+        <n-input
+          :value="text"
+          type="textarea"
+          placeholder="Enter text..."
+          autosize
+          :maxlength="CHARACTER_LIMIT"
+          class="note-text-input"
+          @update:value="updateText"
+          @input="emitInput"
+        />
+
+        <!-- Character Count -->
+        <div v-if="showCharacterCount" class="character-count">
+          {{ text.length }} / {{ CHARACTER_LIMIT }}
+        </div>
+
+        <!-- Tags Input -->
+        <div class="note-tags">
+          <div class="tags-input">
+            <div v-for="(tag, index) in tags" :key="index" class="tag">
+              <span class="tag-text" @click="editTag(index)">{{ tag }}</span>
+              <n-icon
+                size="16"
+                class="tag-remove-icon"
+                @click="removeTag(index)"
+              >
+                <CloseIcon />
+              </n-icon>
+            </div>
+            <input
+              v-model="tagInput"
+              @keydown.space.prevent="addTag"
+              @input="emitInput"
+              placeholder="Enter tags..."
+              class="tag-input-field"
+            />
+          </div>
+        </div>
+
+        <!-- Save and Cancel Buttons -->
+        <div class="note-footer">
+          <n-button
+            type="primary"
+            :disabled="text.length > CHARACTER_LIMIT"
+            @click="handleSave"
+          >
+            {{ mode === 'edit' ? 'Update' : 'Create' }}
+          </n-button>
+          <n-button @click="handleCancelClick">Cancel</n-button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { NButton, NIcon, NDropdown } from 'naive-ui'
+import { NButton, NIcon, NDropdown, NInput, useDialog } from 'naive-ui'
 import {
-  ArrowUndoOutline as Reply,
-  EllipsisVerticalOutline as More,
+  ArrowUndoOutline as ReplyIcon,
+  EllipsisVerticalOutline as MoreIcon,
+  Close as CloseIcon,
 } from '@vicons/ionicons5'
 
 export default {
@@ -81,22 +163,56 @@ export default {
     NButton,
     NIcon,
     NDropdown,
-    Reply,
-    More,
+    NInput,
+    ReplyIcon,
+    MoreIcon,
+    CloseIcon,
   },
   props: {
+    mode: {
+      type: String,
+      default: 'view', // 'view', 'create', or 'edit'
+    },
     note: {
       type: Object,
-      required: true,
+      default: () => ({}),
     },
     formatTime: {
       type: Function,
       required: true,
     },
+    parentNote: {
+      type: Object,
+      default: null,
+    },
   },
-  emits: ['reply-click', 'chat-click', 'time-click', 'dropdown-command'],
+  emits: [
+    'reply-click',
+    'chat-click',
+    'time-click',
+    'dropdown-command',
+    'create-note',
+    'update-note',
+    'cancel-create',
+  ],
   data() {
     return {
+      text: this.note?.text || '',
+      tags: this.note?.tags ? [...this.note.tags] : [],
+      tagInput: '',
+      reply: this.parentNote
+        ? {
+            id: this.parentNote.id,
+            textPreview: this.parentNote.text,
+          }
+        : this.note?.parentId
+          ? {
+              id: this.note.parentId,
+              textPreview: this.note.parentTextPreview,
+            }
+          : null,
+      isEditing: this.mode === 'edit' || this.mode === 'create',
+      CHARACTER_LIMIT: 1000,
       dropdownOptions: [
         { label: 'Reply', key: 'reply' },
         { label: 'Edit', key: 'edit' },
@@ -104,7 +220,18 @@ export default {
       ],
     }
   },
+  computed: {
+    showCharacterCount() {
+      return this.text.length >= this.CHARACTER_LIMIT * 0.8
+    },
+  },
   methods: {
+    switchToEditMode() {
+      this.isEditing = true
+    },
+    switchToViewMode() {
+      this.isEditing = false
+    },
     handleReplyClick(note) {
       this.$emit('reply-click', note)
     },
@@ -115,10 +242,69 @@ export default {
       this.$emit('time-click', note)
     },
     handleDropdownCommand(key) {
-      this.$emit('dropdown-command', key, this.note)
+      if (key === 'edit') {
+        this.switchToEditMode()
+      } else {
+        this.$emit('dropdown-command', key, this.note)
+      }
+    },
+    handleSave() {
+      const noteData = {
+        text: this.text,
+        tags: this.tags,
+        parentId: this.reply ? this.reply.id : null,
+      }
+      if (this.mode === 'edit' || this.note.id) {
+        // Update note
+        this.$emit('update-note', noteData, this.note)
+        this.switchToViewMode()
+      } else {
+        // Create new note
+        this.$emit('create-note', noteData, this)
+        this.text = ''
+        this.tags = []
+        this.tagInput = ''
+        this.reply = null
+        this.isEditing = false
+      }
     },
     handleCancelClick() {
-      // Implement undo delete functionality if needed
+      if (this.mode === 'create' && this.parentNote) {
+        this.$emit('cancel-create', this)
+      } else {
+        this.switchToViewMode()
+      }
+    },
+    handleRemoveReply() {
+      const dialog = useDialog()
+      dialog.warning({
+        title: 'Confirm Removal',
+        content: 'Are you sure you want to remove the reply?',
+        positiveText: 'Yes',
+        negativeText: 'No',
+        onPositiveClick: () => {
+          this.reply = null
+        },
+      })
+    },
+    addTag() {
+      if (this.tagInput.trim()) {
+        this.tags.push(this.tagInput.trim())
+        this.tagInput = ''
+      }
+    },
+    removeTag(index) {
+      this.tags.splice(index, 1)
+    },
+    editTag(index) {
+      this.tagInput = this.tags[index]
+      this.tags.splice(index, 1)
+    },
+    emitInput() {
+      // For unsaved changes tracking if needed
+    },
+    updateText(value) {
+      this.text = value
     },
   },
 }
@@ -131,7 +317,7 @@ export default {
   padding: 8px 12px;
   background-color: var(--block-color);
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.05);
-  overflow: hidden; /* Ensure child elements are clipped to border radius */
+  overflow: hidden;
 }
 
 .note-content {
@@ -153,8 +339,8 @@ export default {
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  border-radius: inherit; /* Inherit border radius from parent */
-  z-index: 1; /* Ensure it sits above the content */
+  border-radius: inherit;
+  z-index: 1;
 }
 
 .note-overlay-content {
@@ -177,12 +363,21 @@ export default {
   padding: 8px;
   font-size: 14px;
   color: var(--faded-text-color);
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .note-reply-link {
   color: inherit;
   cursor: pointer;
+  flex: 1;
+}
+
+.note-reply-remove-icon {
+  cursor: pointer;
+  color: var(--faded-text-color);
+  margin-left: 8px;
 }
 
 .note-text {
@@ -229,5 +424,64 @@ export default {
 
 .faded-text {
   color: var(--faded-text-color);
+}
+
+.note-text-input {
+  width: 100%;
+  margin-top: 10px;
+  font-size: 20px;
+  border-radius: 10px;
+}
+
+.character-count {
+  text-align: right;
+  margin-top: 5px;
+  font-size: 14px;
+  color: var(--faded-text-color);
+}
+
+.tags-input {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 10px;
+  padding: 8px;
+  background-color: var(--overlay-bg-color);
+  border-radius: 10px;
+}
+
+.tag {
+  display: flex;
+  align-items: center;
+  background-color: var(--tag-bg-color);
+  border-radius: 10px;
+  padding: 4px 8px;
+  margin-right: 5px;
+  margin-bottom: 5px;
+}
+
+.tag-text {
+  color: var(--text-color);
+  cursor: pointer;
+}
+
+.tag-remove-icon {
+  margin-left: 4px;
+  cursor: pointer;
+}
+
+.tag-input-field {
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-color);
+  flex: 1;
+  min-width: 100px;
+}
+
+.note-placeholder {
+  font-size: 20px;
+  color: var(--faded-text-color);
+  cursor: pointer;
 }
 </style>
