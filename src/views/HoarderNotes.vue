@@ -49,6 +49,7 @@
 import { NLayout, NLayoutContent, NRow, NCol, useDialog } from 'naive-ui'
 import { ref } from 'vue'
 import { useInfiniteScroll } from '@vueuse/core'
+import { useRouter } from 'vue-router'
 import NoteItem from '@/components/NoteItem.vue'
 import HoarderHeader from '@/components/HoarderHeader.vue'
 import api from '@/utils/api.js'
@@ -64,11 +65,12 @@ export default {
     HoarderHeader,
   },
   setup() {
+    const router = useRouter()
     const notes = ref([])
     const loading = ref(false)
     const page = ref(1)
     const pageSize = ref(10)
-    const lastNoteCreatedAt = ref('2025-10-02T02:06:51.619403')
+    const lastNoteCreatedAt = ref(new Date().toISOString())
     const noMoreNotes = ref(false)
 
     const dialog = useDialog()
@@ -127,16 +129,18 @@ export default {
         })
     }
 
-    const handleReplyClick = (note) => {
-      console.log('Reply clicked', note)
+    const handleReplyClick = (noteItem) => {
+      if (noteItem.parentId) {
+        router.push(`/notes/${noteItem.parentId}`)
+      }
     }
 
-    const handleChatClick = (note) => {
-      console.log('Chat clicked', note)
+    const handleChatClick = (noteItem) => {
+      router.push(`/notes/${noteItem.id}`)
     }
 
-    const handleTimeClick = (note) => {
-      console.log('Time clicked', note)
+    const handleTimeClick = (noteItem) => {
+      router.push(`/notes/${noteItem.id}`)
     }
 
     const formatTime = (createdAt) => {
