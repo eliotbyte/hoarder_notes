@@ -1,25 +1,25 @@
-import { createStore } from 'vuex';
+import { createStore } from 'vuex'
 
 export default createStore({
   state: {
-    authToken: localStorage.getItem('authToken') || null
+    accessToken: localStorage.getItem('accessToken') || null,
   },
   mutations: {
-    setAuthToken(state, token) {
-      state.authToken = token;
-      localStorage.setItem('authToken', token);
+    setAccessToken(state, token) {
+      state.accessToken = token
+      localStorage.setItem('accessToken', token)
     },
-    clearAuthToken(state) {
-      state.authToken = null;
-      localStorage.removeItem('authToken');
-    }
+    clearAccessToken(state) {
+      state.accessToken = null
+      localStorage.removeItem('accessToken')
+    },
   },
   actions: {
     logout({ commit }) {
-      commit('clearAuthToken');
-    }
+      commit('clearAccessToken')
+    },
   },
   getters: {
-    isAuthenticated: state => !!state.authToken
-  }
-});
+    isAuthenticated: (state) => !!state.accessToken,
+  },
+})

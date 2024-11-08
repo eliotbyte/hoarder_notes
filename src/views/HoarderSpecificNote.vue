@@ -96,7 +96,7 @@ export default {
 
     const fetchNote = async (id) => {
       try {
-        const response = await api.get(`/api/Notes/${id}`)
+        const response = await api.get(`/notes/${id}`)
         note.value = { ...response.data, mode: 'view' }
       } catch (error) {
         console.error('Error fetching note:', error)
@@ -108,7 +108,7 @@ export default {
       loading.value = true
 
       try {
-        const response = await api.get('/api/Notes/filter', {
+        const response = await api.get('/notes/filter', {
           params: {
             lastNoteCreatedAt: lastNoteCreatedAt.value,
             parentId: note.value.id,
@@ -168,7 +168,7 @@ export default {
 
     const deleteNote = async (noteItem) => {
       try {
-        await api.delete(`/api/Notes/${noteItem.id}`)
+        await api.delete(`/notes/${noteItem.id}`)
         noteItem.isDeleted = true
       } catch (error) {
         console.error('Error deleting note:', error)
@@ -177,7 +177,7 @@ export default {
 
     const handleRestoreNote = (noteItem, index) => {
       api
-        .post(`/api/Notes/restore/${noteItem.id}`)
+        .post(`/notes/restore/${noteItem.id}`)
         .then((response) => {
           if (noteItem.id === note.value.id) {
             note.value = { ...response.data, mode: 'view' }
@@ -240,7 +240,7 @@ export default {
       // This creates a new reply to the main note
       noteData.parentId = note.value.id
       api
-        .post('/api/Notes', noteData)
+        .post('/notes', noteData)
         .then((response) => {
           replies.value.unshift({ ...response.data, mode: 'view' })
           note.value.replyCount += 1 // Update reply count
@@ -252,7 +252,7 @@ export default {
 
     const handleUpdateNote = (noteData, noteItem) => {
       api
-        .put(`/api/Notes/${noteItem.id}`, noteData)
+        .put(`/notes/${noteItem.id}`, noteData)
         .then((response) => {
           Object.assign(noteItem, response.data)
           noteItem.mode = 'view'
@@ -264,7 +264,7 @@ export default {
 
     const handleUpdateReply = (noteData, replyItem) => {
       api
-        .put(`/api/Notes/${replyItem.id}`, noteData)
+        .put(`/notes/${replyItem.id}`, noteData)
         .then((response) => {
           Object.assign(replyItem, response.data)
           replyItem.mode = 'view'

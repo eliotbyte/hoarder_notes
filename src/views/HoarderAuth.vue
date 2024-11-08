@@ -45,15 +45,15 @@ const router = useRouter()
 const message = useMessage()
 
 const submitForm = async () => {
-  console.log('Form Data:', loginForm.value)
   try {
-    const response = await api.post('/api/Users/login', {
-      username: loginForm.value.username,
+    const response = await api.post('/users/login', {
+      name: loginForm.value.username,
       password: loginForm.value.password,
     })
-    if (response.status === 200) {
-      const token = response.data.token
-      localStorage.setItem('authToken', token)
+
+    if (response.status === 201) {
+      const token = response.data.accessToken
+      localStorage.setItem('accessToken', token)
       router.push('/notes')
       message.success('Login successful!')
     } else {

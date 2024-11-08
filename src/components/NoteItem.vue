@@ -301,25 +301,21 @@ export default {
       const noteData = {
         text: this.text,
         tags: this.tags,
-        parentId: this.reply ? this.reply.id : null,
+        parent_id: this.reply ? this.reply.id : null,
       }
       if (this.mode === 'edit' || this.note.id) {
-        // Update note
         this.$emit('update-note', noteData, this.note, this.index)
         this.switchToViewMode()
       } else {
-        // Create new note
         this.$emit('create-note', noteData, this.index)
         this.text = ''
         this.tags = []
         this.tagInput = ''
         this.reply = null
         if (!this.parentNote) {
-          // This is the empty note at the top
           this.editingState = false
           this.isPlaceholder = true
         }
-        // For replies, keep in editing mode until replaced
       }
     },
     handleCancelClick() {

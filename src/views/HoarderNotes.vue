@@ -68,10 +68,10 @@ export default {
     const router = useRouter()
     const notes = ref([])
     const loading = ref(false)
-    const page = ref(1)
-    const pageSize = ref(10)
-    const lastNoteCreatedAt = ref(new Date().toISOString())
     const noMoreNotes = ref(false)
+    const lastNoteDate = ref(new Date().toISOString())
+    const topicId = 1 // Hardcoded for now
+    const spaceId = 1 // Hardcoded for now
 
     const dialog = useDialog()
 
@@ -91,7 +91,6 @@ export default {
       } else if (command === 'reply') {
         const index = notes.value.findIndex((n) => n.id === note.id)
         if (index !== -1) {
-          // Check if a reply NoteItem already exists
           if (
             !notes.value[index + 1] ||
             notes.value[index + 1].isReply !== true
@@ -111,22 +110,22 @@ export default {
 
     const deleteNote = async (note) => {
       try {
-        await api.delete(`/api/Notes/${note.id}`)
-        note.isDeleted = true
+        const response = await api.delete(`/notes/${note.id}`)
+        notes.value = notes.value.map((n) =>
+          n.id === note.id ? { ...response.data, mode: 'view' } : n
+        )
       } catch (error) {
         console.error('Error deleting note:', error)
       }
     }
 
-    const handleRestoreNote = (note, index) => {
-      api
-        .post(`/api/Notes/restore/${note.id}`)
-        .then((response) => {
-          notes.value[index] = { ...response.data, mode: 'view' }
-        })
-        .catch((error) => {
-          console.error('Error restoring note:', error)
-        })
+    const handleRestoreNote = async (note, index) => {
+      try {
+        const response = await api.put(`/notes/${note.id}/restore`)
+        notes.value[index] = { ...response.data, mode: 'view' }
+      } catch (error) {
+        console.error('Error restoring note:', error)
+      }
     }
 
     const handleReplyClick = (noteItem) => {
@@ -180,22 +179,26 @@ export default {
       loading.value = true
 
       try {
-        const response = await api.get('/api/Notes/filter', {
+        const response = await api.get('/notes', {
           params: {
-            lastNoteCreatedAt: lastNoteCreatedAt.value,
-            page: page.value,
-            pageSize: pageSize.value,
+            date: lastNoteDate.value,
+            topicId: topicId,
+            spaceId: spaceId,
+            // tags: '', // Include tags if needed
           },
         })
 
-        if (response.data.length < pageSize.value) {
+        if (response.data.length === 0) {
           noMoreNotes.value = true
         }
 
         notes.value.push(
           ...response.data.map((note) => ({ ...note, mode: 'view' }))
         )
-        page.value += 1
+
+        if (response.data.length > 0) {
+          lastNoteDate.value = response.data[response.data.length - 1].createdAt
+        }
       } catch (error) {
         console.error('Error loading notes:', error)
       } finally {
@@ -205,18 +208,18 @@ export default {
 
     useInfiniteScroll(window, loadMoreNotes, {
       distance: 100,
-      immediate: false,
+      immediate: true,
     })
 
     const handleCreateNote = (noteData, index) => {
+      noteData.topicId = topicId
+      noteData.spaceId = spaceId
       api
-        .post('/api/Notes', noteData)
+        .post('/notes', noteData)
         .then((response) => {
           if (notes.value[index] && notes.value[index].isReply) {
-            // This is a reply to a note
             notes.value.splice(index, 1, { ...response.data, mode: 'view' })
           } else {
-            // This is a new note
             notes.value.unshift({ ...response.data, mode: 'view' })
           }
         })
@@ -227,7 +230,7 @@ export default {
 
     const handleUpdateNote = (noteData, note) => {
       api
-        .put(`/api/Notes/${note.id}`, noteData)
+        .put(`/notes/${note.id}`, noteData)
         .then((response) => {
           Object.assign(note, response.data)
           note.mode = 'view'
@@ -272,7 +275,7 @@ export default {
 }
 
 .layout-content {
-  padding-top: 80px; /* Adjust according to header height */
+  padding-top: 80px;
 }
 
 .n-icon {
