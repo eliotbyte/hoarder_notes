@@ -5,12 +5,37 @@
       <n-layout-content class="layout-content">
         <n-row :gutter="30">
           <n-col :span="6">
-            <div class="grid-content" />
+            <div class="grid-content">
+              <!-- Spaces and Topics List -->
+              <div class="spaces-list">
+                <div v-for="space in spaces" :key="space.id" class="space-item">
+                  <div
+                    @click="selectSpace(space)"
+                    :class="{ selected: space.id === spaceId }"
+                    class="space-name"
+                  >
+                    {{ space.name }}
+                  </div>
+                  <div v-if="space.id === spaceId" class="topics-list">
+                    <div
+                      v-for="topic in space.topics"
+                      :key="topic.id"
+                      @click="selectTopic(space, topic)"
+                      :class="{ selected: topic.id === topicId }"
+                      class="topic-item"
+                    >
+                      {{ topic.name }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </n-col>
           <n-col :span="12">
             <div class="grid-content p-4 grid gap-6">
               <!-- Empty NoteItem for creating new note -->
               <NoteItem
+                v-if="spaceId"
                 :note="{}"
                 mode="create"
                 :format-time="formatTime"
@@ -47,9 +72,9 @@
 
 <script>
 import { NLayout, NLayoutContent, NRow, NCol, useDialog } from 'naive-ui'
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useInfiniteScroll } from '@vueuse/core'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import NoteItem from '@/components/NoteItem.vue'
 import HoarderHeader from '@/components/HoarderHeader.vue'
 import api from '@/utils/api.js'
@@ -66,16 +91,41 @@ export default {
   },
   setup() {
     const router = useRouter()
+    const route = useRoute()
     const notes = ref([])
     const loading = ref(false)
     const noMoreNotes = ref(false)
     const page = ref(1)
     const pageSize = ref(10)
-    const lastNoteDate = ref(new Date().toISOString())
-    const topicId = 1 // Hardcoded for now
-    const spaceId = 1 // Hardcoded for now
-
+    const topicId = ref(null)
+    const spaceId = ref(null)
+    const spaces = ref([])
     const dialog = useDialog()
+
+    const loadSpaces = async () => {
+      try {
+        const response = await api.get('/spaces')
+        spaces.value = response.data
+
+        // After spaces are loaded, check if route.query.spaceId and topicId are set
+        if (route.query.spaceId) {
+          const space = spaces.value.find((s) => s.id == route.query.spaceId)
+          if (space) {
+            spaceId.value = space.id
+            if (route.query.topicId) {
+              const topic = space.topics.find(
+                (t) => t.id == route.query.topicId
+              )
+              if (topic) {
+                topicId.value = topic.id
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading spaces:', error)
+      }
+    }
 
     const handleDropdownCommand = (command, note) => {
       if (command === 'delete') {
@@ -178,18 +228,23 @@ export default {
 
     const loadMoreNotes = async () => {
       if (loading.value || noMoreNotes.value) return
+      if (!spaceId.value) {
+        loading.value = false
+        return
+      }
       loading.value = true
 
       try {
-        const response = await api.get('/notes', {
-          params: {
-            date: lastNoteDate.value,
-            page: page.value,
-            pageSize: pageSize.value,
-            topicId: topicId,
-            spaceId: spaceId,
-          },
-        })
+        const params = {
+          page: page.value,
+          pageSize: pageSize.value,
+          spaceId: spaceId.value,
+        }
+        if (topicId.value) {
+          params.topicId = topicId.value
+        }
+
+        const response = await api.get('/notes', { params })
 
         if (response.data.data.length < pageSize.value) {
           noMoreNotes.value = true
@@ -212,8 +267,8 @@ export default {
     })
 
     const handleCreateNote = (noteData, index) => {
-      noteData.topicId = topicId
-      noteData.spaceId = spaceId
+      noteData.topicId = topicId.value
+      noteData.spaceId = spaceId.value
       api
         .post('/notes', noteData)
         .then((response) => {
@@ -246,6 +301,37 @@ export default {
       }
     }
 
+    const selectSpace = (space) => {
+      spaceId.value = space.id
+      topicId.value = null
+    }
+
+    const selectTopic = (space, topic) => {
+      spaceId.value = space.id
+      topicId.value = topic.id
+    }
+
+    onMounted(() => {
+      loadSpaces()
+    })
+
+    watch([spaceId, topicId], ([newSpaceId, newTopicId]) => {
+      // Reset notes
+      notes.value = []
+      page.value = 1
+      noMoreNotes.value = false
+      // Update the route query parameters
+      router.replace({
+        query: {
+          ...route.query,
+          spaceId: newSpaceId,
+          topicId: newTopicId,
+        },
+      })
+      // Load notes
+      loadMoreNotes()
+    })
+
     return {
       handleDropdownCommand,
       handleReplyClick,
@@ -259,6 +345,11 @@ export default {
       handleUpdateNote,
       handleCancelCreate,
       handleRestoreNote,
+      spaces,
+      spaceId,
+      topicId,
+      selectSpace,
+      selectTopic,
     }
   },
 }
@@ -281,5 +372,36 @@ export default {
 .n-icon {
   font-size: 24px;
   color: var(--text-color);
+}
+
+.spaces-list {
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+
+.space-item {
+  margin-bottom: 8px;
+}
+
+.space-name {
+  padding: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.topics-list {
+  margin-left: 16px;
+}
+
+.topic-item {
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+.selected {
+  background-color: var(--selected-bg-color);
+  border-radius: 4px;
 }
 </style>
