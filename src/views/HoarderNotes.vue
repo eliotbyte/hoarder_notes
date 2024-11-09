@@ -112,9 +112,9 @@ export default {
 
     const deleteNote = async (note) => {
       try {
-        const response = await api.delete(`/notes/${note.id}`)
+        await api.delete(`/notes/${note.id}`)
         notes.value = notes.value.map((n) =>
-          n.id === note.id ? { ...response.data, mode: 'view' } : n
+          n.id === note.id ? { ...n, deletedAt: new Date().toISOString() } : n
         )
       } catch (error) {
         console.error('Error deleting note:', error)
@@ -123,8 +123,8 @@ export default {
 
     const handleRestoreNote = async (note, index) => {
       try {
-        const response = await api.put(`/notes/${note.id}/restore`)
-        notes.value[index] = { ...response.data, mode: 'view' }
+        await api.put(`/notes/${note.id}/restore`)
+        notes.value[index] = { ...note, deletedAt: null, mode: 'view' }
       } catch (error) {
         console.error('Error restoring note:', error)
       }
@@ -188,7 +188,6 @@ export default {
             pageSize: pageSize.value,
             topicId: topicId,
             spaceId: spaceId,
-            // tags: '', // Include tags if needed
           },
         })
 
