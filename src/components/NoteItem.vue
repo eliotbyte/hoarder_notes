@@ -195,6 +195,14 @@ export default {
       type: Boolean,
       default: false,
     },
+    spaceId: {
+      type: Number,
+      default: null,
+    },
+    topicId: {
+      type: Number,
+      default: null,
+    },
   },
   emits: [
     'reply-click',
@@ -306,6 +314,7 @@ export default {
         tags: this.tags,
         parentId: this.reply ? this.reply.id : null,
       }
+      this.$emit('unsaved-changes', false)
       if (this.mode === 'edit' || this.note.id) {
         this.$emit('update-note', noteData, this.note, this.index)
         this.switchToViewMode()

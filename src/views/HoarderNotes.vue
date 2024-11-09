@@ -284,6 +284,8 @@ export default {
     }
 
     const handleUpdateNote = (noteData, note) => {
+      noteData.topicId = topicId.value
+      noteData.spaceId = spaceId.value
       api
         .put(`/notes/${note.id}`, noteData)
         .then((response) => {
