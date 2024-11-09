@@ -28,3 +28,33 @@
 .n-layout-scroll-container {
   background-color: var(--bg-color) !important;
 }
+
+/* Added content-block class */
+.content-block {
+  position: relative;
+  border-radius: 15px;
+  padding: 8px 12px;
+  background-color: var(--block-color);
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  margin-bottom: 16px; /* Add margin between blocks if needed */
+}
+
+/* Hover effect for space-name and topic-item */
+.space-name,
+.topic-item {
+  display: block;
+  width: 100%;
+}
+
+.space-name:hover,
+.topic-item:hover {
+  background-color: var(--note-bright-color);
+}
+
+/* Ensure no extra padding interferes */
+.spaces-list,
+.topics-list {
+  padding: 0;
+  margin: 0;
+}

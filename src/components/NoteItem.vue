@@ -1,5 +1,5 @@
 <template>
-  <div class="note">
+  <div>
     <!-- Placeholder for Create Mode -->
     <div v-if="isPlaceholder">
       <div class="note-placeholder" @click="switchToEditMode">
@@ -400,14 +400,7 @@ export default {
 </script>
 
 <style scoped>
-.note {
-  position: relative;
-  border-radius: 15px;
-  padding: 8px 12px;
-  background-color: var(--block-color);
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-}
+/* Removed the .note class styles */
 
 .note-content {
   /* No changes needed here */

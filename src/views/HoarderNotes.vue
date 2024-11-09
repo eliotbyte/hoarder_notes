@@ -7,57 +7,71 @@
           <n-col :span="6">
             <div class="grid-content">
               <!-- Spaces and Topics List -->
-              <div class="spaces-list">
-                <div v-for="space in spaces" :key="space.id" class="space-item">
+              <div class="content-block">
+                <div class="spaces-list">
                   <div
-                    @click="selectSpace(space)"
-                    :class="{ selected: space.id === spaceId }"
-                    class="space-name"
+                    v-for="space in spaces"
+                    :key="space.id"
+                    class="space-item"
                   >
-                    {{ space.name }}
-                  </div>
-                  <div v-if="space.id === spaceId" class="topics-list">
                     <div
-                      v-for="topic in space.topics"
-                      :key="topic.id"
-                      @click="selectTopic(space, topic)"
-                      :class="{ selected: topic.id === topicId }"
-                      class="topic-item"
+                      @click="selectSpace(space)"
+                      :class="{ selected: space.id === spaceId }"
+                      class="space-name"
                     >
-                      {{ topic.name }}
+                      {{ space.name }}
                     </div>
+                    <transition name="slide">
+                      <div v-if="space.id === spaceId" class="topics-list">
+                        <div
+                          v-for="topic in space.topics"
+                          :key="topic.id"
+                          @click="selectTopic(space, topic)"
+                          :class="{ selected: topic.id === topicId }"
+                          class="topic-item"
+                        >
+                          {{ topic.name }}
+                        </div>
+                      </div>
+                    </transition>
                   </div>
                 </div>
               </div>
             </div>
           </n-col>
           <n-col :span="12">
-            <div class="grid-content p-4 grid gap-6">
+            <div class="grid-content p-4 grid gap-1">
               <!-- Empty NoteItem for creating new note -->
-              <NoteItem
-                v-if="spaceId && topicId"
-                :note="{}"
-                mode="create"
-                :format-time="formatTime"
-                @create-note="handleCreateNote"
-              />
-              <NoteItem
+              <div v-if="spaceId && topicId" class="content-block">
+                <NoteItem
+                  :note="{}"
+                  mode="create"
+                  :format-time="formatTime"
+                  @create-note="handleCreateNote"
+                />
+              </div>
+              <!-- Notes List -->
+              <div
                 v-for="(note, index) in notes"
                 :key="note.id || `reply-${index}`"
-                :note="note"
-                :format-time="formatTime"
-                :parent-note="note.parentNote"
-                :mode="note.mode || 'view'"
-                :index="index"
-                @create-note="handleCreateNote"
-                @update-note="handleUpdateNote"
-                @cancel-create="handleCancelCreate"
-                @reply-click="handleReplyClick"
-                @chat-click="handleChatClick"
-                @time-click="handleTimeClick"
-                @dropdown-command="handleDropdownCommand"
-                @restore-note="handleRestoreNote"
-              />
+                class="content-block"
+              >
+                <NoteItem
+                  :note="note"
+                  :format-time="formatTime"
+                  :parent-note="note.parentNote"
+                  :mode="note.mode || 'view'"
+                  :index="index"
+                  @create-note="handleCreateNote"
+                  @update-note="handleUpdateNote"
+                  @cancel-create="handleCancelCreate"
+                  @reply-click="handleReplyClick"
+                  @chat-click="handleChatClick"
+                  @time-click="handleTimeClick"
+                  @dropdown-command="handleDropdownCommand"
+                  @restore-note="handleRestoreNote"
+                />
+              </div>
               <div v-if="loading">Loading...</div>
             </div>
           </n-col>
@@ -389,6 +403,10 @@ export default {
   color: var(--text-color);
 }
 
+.grid-content {
+  padding: 16px;
+}
+
 .spaces-list {
   position: sticky;
   top: 0;
@@ -408,6 +426,7 @@ export default {
 
 .topics-list {
   margin-left: 16px;
+  overflow: hidden;
 }
 
 .topic-item {
@@ -418,5 +437,23 @@ export default {
 .selected {
   background-color: var(--selected-bg-color);
   border-radius: 4px;
+}
+
+/* Transition styles for topics-list */
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.5s ease;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+
+.slide-enter-to,
+.slide-leave-from {
+  max-height: 500px; /* Adjust as needed */
+  opacity: 1;
 }
 </style>
