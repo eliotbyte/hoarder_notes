@@ -1,34 +1,50 @@
 import { createRouter, createWebHistory } from 'vue-router'
-
-const Home = () =>
-  import(/* webpackChunkName: "home" */ '../views/HoarderHome.vue')
-const NotePage = () =>
-  import(/* webpackChunkName: "note-page" */ '../views/HoarderNotePage.vue')
-const Login = () =>
-  import(/* webpackChunkName: "login" */ '../views/HoarderLogin.vue')
+import HoarderAuth from '../views/HoarderAuth.vue'
+import HoarderNotes from '../views/HoarderNotes.vue'
+import HoarderSpecificNote from '../views/HoarderSpecificNote.vue'
 
 const routes = [
   {
     path: '/',
-    name: 'Home',
-    component: Home,
+    redirect: '/auth',
   },
   {
-    path: '/note/:id',
-    name: 'NotePage',
-    component: NotePage,
-    props: true,
+    path: '/auth',
+    name: 'HoarderAuth',
+    component: HoarderAuth,
   },
   {
-    path: '/login',
-    name: 'Login',
-    component: Login,
+    path: '/notes',
+    name: 'HoarderNotes',
+    component: HoarderNotes,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/notes/:id',
+    name: 'HoarderSpecificNote',
+    component: HoarderSpecificNote,
+    meta: { requiresAuth: true },
   },
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
+})
+
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('accessToken')
+
+  if ((to.path === '/' || to.path === '/auth') && token) {
+    next('/notes')
+    return
+  }
+
+  if (to.matched.some((record) => record.meta.requiresAuth) && !token) {
+    next('/auth')
+  } else {
+    next()
+  }
 })
 
 export default router

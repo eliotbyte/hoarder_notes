@@ -1,148 +1,116 @@
-<!-- ./src/components/HoarderHeader.vue -->
-
 <template>
-  <div class="fixed-header">
-    <div v-if="!selectionMode" id="normal-header" class="header-container">
-      <div class="jakarta-semibold text-[32px] text-textColor">ZAEBEAST</div>
-      <div class="flex space-x-4 items-center">
-        <button
-          class="bg-red-500 text-white px-4 py-2 rounded-md"
-          @click="logout"
-        >
-          Logout
-        </button>
-        <img
-          src="https://www.svgrepo.com/download/533701/refresh-cw.svg"
-          alt="Refresh Icon"
-          class="w-6 h-6 icon-filter cursor-pointer"
-          @click="refreshNotes"
-        />
-        <img
-          id="plus-icon"
-          src="https://www.svgrepo.com/download/491467/plus.svg"
-          alt="Plus Icon"
-          class="w-6 h-6 cursor-pointer icon-filter"
-          @click="$emit('openModal')"
-        />
-        <img
-          id="theme-toggle"
-          :src="themeIcon"
-          :alt="themeAlt"
-          class="w-6 h-6 cursor-pointer icon-filter"
-          @click="toggleTheme"
-        />
+  <n-layout-header :class="['header', { 'header--hidden': !isHeaderVisible }]">
+    <div class="header-container">
+      <div class="header-left">
+        <h1 class="header-title">Hoarder Notes</h1>
+      </div>
+      <div class="header-right">
+        <n-button text @click="handleToggleDark">
+          <n-icon v-if="!isDark">
+            <SunnyIcon />
+          </n-icon>
+          <n-icon v-else>
+            <MoonIcon />
+          </n-icon>
+        </n-button>
       </div>
     </div>
-    <div v-else id="selection-header" class="header-container">
-      <div
-        id="selected-count"
-        class="jakarta-semibold text-[24px] text-textColor"
-      >
-        {{ selectedNotes.length }} selected
-      </div>
-      <div class="flex space-x-4 items-center">
-        <button
-          class="bg-red-500 text-white px-4 py-2 rounded-md"
-          @click="deleteSelected"
-        >
-          Delete
-        </button>
-        <button
-          class="bg-gray-500 text-white px-4 py-2 rounded-md"
-          @click="cancelSelection"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
+  </n-layout-header>
 </template>
 
 <script>
-import { mapState, mapMutations } from 'vuex'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { NLayoutHeader, NButton, NIcon } from 'naive-ui'
+import {
+  SunnyOutline as SunnyIcon,
+  MoonOutline as MoonIcon,
+} from '@vicons/ionicons5'
+import { isDark, toggleDark } from '../composables'
 
 export default {
-  emits: ['openModal'],
-  data() {
-    return {
-      isDarkTheme: false,
-    }
+  name: 'HoarderHeader',
+  components: {
+    NLayoutHeader,
+    NButton,
+    NIcon,
+    SunnyIcon,
+    MoonIcon,
   },
-  computed: {
-    ...mapState(['selectedNotes', 'selectionMode']),
-    themeIcon() {
-      return this.isDarkTheme
-        ? 'https://www.svgrepo.com/download/45607/day-of-sun.svg'
-        : 'https://www.svgrepo.com/download/487620/night.svg'
-    },
-    themeAlt() {
-      return this.isDarkTheme ? 'Switch to Light Mode' : 'Switch to Dark Mode'
-    },
-  },
-  methods: {
-    ...mapMutations(['setSelectedNotes', 'setSelectionMode']),
-    refreshNotes() {
-      this.$store.dispatch('fetchNotes')
-    },
-    toggleTheme() {
-      this.isDarkTheme = !this.isDarkTheme
-      document.documentElement.classList.toggle('dark')
-      if (this.isDarkTheme) {
-        localStorage.setItem('theme', 'dark')
-      } else {
-        localStorage.setItem('theme', 'light')
-      }
-    },
-    deleteSelected() {
-      this.selectedNotes.forEach((note) => {
-        this.$store.dispatch('deleteNote', note.id)
-      })
-      this.cancelSelection()
-    },
-    cancelSelection() {
-      this.setSelectedNotes([])
-      this.setSelectionMode(false)
-    },
-    logout() {
-      this.$store.dispatch('logout')
-      this.$router.push('/login')
-    },
-    initializeTheme() {
-      const userTheme = localStorage.getItem('theme')
-      const systemPrefersDark = window.matchMedia(
-        '(prefers-color-scheme: dark)'
-      ).matches
+  setup() {
+    const isHeaderVisible = ref(true)
+    let lastScrollPosition =
+      window.pageYOffset || document.documentElement.scrollTop
 
-      if (userTheme === 'dark' || (!userTheme && systemPrefersDark)) {
-        this.isDarkTheme = true
-        document.documentElement.classList.add('dark')
+    const onScroll = () => {
+      const currentScrollPosition =
+        window.pageYOffset || document.documentElement.scrollTop
+
+      if (currentScrollPosition > lastScrollPosition) {
+        // Scrolling down
+        isHeaderVisible.value = false
       } else {
-        this.isDarkTheme = false
-        document.documentElement.classList.remove('dark')
+        // Scrolling up
+        isHeaderVisible.value = true
       }
-    },
-  },
-  mounted() {
-    this.initializeTheme()
+      lastScrollPosition =
+        currentScrollPosition <= 0 ? 0 : currentScrollPosition
+    }
+
+    onMounted(() => {
+      window.addEventListener('scroll', onScroll)
+    })
+
+    onUnmounted(() => {
+      window.removeEventListener('scroll', onScroll)
+    })
+
+    const darkMode = computed(() => isDark.value)
+
+    const handleToggleDark = () => {
+      toggleDark()
+    }
+
+    return {
+      isHeaderVisible,
+      isDark: darkMode,
+      handleToggleDark,
+    }
   },
 }
 </script>
 
 <style scoped>
-.fixed-header {
+.header {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  z-index: 1000;
-  background-color: var(--background-color);
-  /* Add any additional styling you need */
+  right: 0;
+  background-color: var(--bg-color);
+  border-bottom: 1px solid #ccc;
+  z-index: 100;
+  transition: transform 0.3s ease;
+}
+
+.header--hidden {
+  transform: translateY(-100%);
 }
 
 .header-container {
-  padding: 16px;
+  width: 1169px;
+  margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 20px;
+}
+
+.header-title {
+  font-size: 24px;
+  color: var(--text-color);
+}
+
+.n-icon {
+  font-size: 24px;
+  color: var(--text-color);
 }
 </style>

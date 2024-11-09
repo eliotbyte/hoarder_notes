@@ -1,28 +1,19 @@
-// ./src/main.js
+import { createApp } from 'vue';
+import App from './App.vue';
+import naive from 'naive-ui';
+import './styles/index.css';
+import './styles/global-overrides.css';
+import router from './router';
+import api from './utils/api';
+import { createDiscreteApi } from 'naive-ui';
 
-import { createApp } from 'vue'
-import App from './App.vue'
-import router from './router'
-import store from './store'
-import axios from 'axios'
-import './styles/app.css'
+const { message } = createDiscreteApi(['message']);
 
-const app = createApp(App)
+const app = createApp(App);
 
-// Set up Axios interceptor
-axios.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response && error.response.status === 401) {
-      // Dispatch the logout action
-      store.dispatch('logout')
-      // Redirect to the login page
-      router.push('/login')
-      // Optionally, you can show a notification to the user here
-      return Promise.resolve() // Prevent further propagation
-    }
-    return Promise.reject(error)
-  }
-)
+app.config.globalProperties.$axios = api;
+app.config.globalProperties.$message = message;
 
-app.use(router).use(store).mount('#app')
+app.use(naive);
+app.use(router);
+app.mount('#app');

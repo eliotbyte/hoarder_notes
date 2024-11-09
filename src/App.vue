@@ -1,31 +1,29 @@
-<!-- ./src/App.vue -->
-
 <template>
-  <router-view />
+  <n-config-provider :theme="theme">
+    <n-message-provider>
+      <n-dialog-provider>
+        <n-notification-provider>
+          <router-view />
+        </n-notification-provider>
+      </n-dialog-provider>
+    </n-message-provider>
+  </n-config-provider>
 </template>
 
 <script>
-export default {
+import { defineComponent, computed } from 'vue'
+import { darkTheme } from 'naive-ui'
+import { isDark } from './composables'
+
+export default defineComponent({
   name: 'App',
-  mounted() {
-    document.addEventListener('selectionchange', this.handleSelectionChange)
+  setup() {
+    const theme = computed(() => (isDark.value ? darkTheme : null))
+    return { theme }
   },
-  beforeUnmount() {
-    document.removeEventListener('selectionchange', this.handleSelectionChange)
-  },
-  methods: {
-    handleSelectionChange() {
-      if (this.$store.state.selectionMode) {
-        window.getSelection().removeAllRanges()
-      }
-    },
-  },
-}
+})
 </script>
 
 <style>
-/* Global styles can be added here */
-.disable-text-selection {
-  user-select: none;
-}
+/* Styles */
 </style>
