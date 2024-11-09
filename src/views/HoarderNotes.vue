@@ -69,6 +69,8 @@ export default {
     const notes = ref([])
     const loading = ref(false)
     const noMoreNotes = ref(false)
+    const page = ref(1)
+    const pageSize = ref(10)
     const lastNoteDate = ref(new Date().toISOString())
     const topicId = 1 // Hardcoded for now
     const spaceId = 1 // Hardcoded for now
@@ -182,23 +184,22 @@ export default {
         const response = await api.get('/notes', {
           params: {
             date: lastNoteDate.value,
+            page: page.value,
+            pageSize: pageSize.value,
             topicId: topicId,
             spaceId: spaceId,
             // tags: '', // Include tags if needed
           },
         })
 
-        if (response.data.length === 0) {
+        if (response.data.data.length < pageSize.value) {
           noMoreNotes.value = true
         }
 
         notes.value.push(
-          ...response.data.map((note) => ({ ...note, mode: 'view' }))
+          ...response.data.data.map((note) => ({ ...note, mode: 'view' }))
         )
-
-        if (response.data.length > 0) {
-          lastNoteDate.value = response.data[response.data.length - 1].createdAt
-        }
+        page.value += 1
       } catch (error) {
         console.error('Error loading notes:', error)
       } finally {
@@ -208,7 +209,7 @@ export default {
 
     useInfiniteScroll(window, loadMoreNotes, {
       distance: 100,
-      immediate: true,
+      immediate: false,
     })
 
     const handleCreateNote = (noteData, index) => {
