@@ -35,7 +35,7 @@
             <div class="grid-content p-4 grid gap-6">
               <!-- Empty NoteItem for creating new note -->
               <NoteItem
-                v-if="spaceId"
+                v-if="spaceId && topicId"
                 :note="{}"
                 mode="create"
                 :format-time="formatTime"
@@ -267,8 +267,21 @@ export default {
     })
 
     const handleCreateNote = (noteData, index) => {
-      noteData.topicId = topicId.value
-      noteData.spaceId = spaceId.value
+      if (noteData.parentId) {
+        // This is a reply note, get spaceId and topicId from the parent note
+        const parentNote = notes.value.find((n) => n.id === noteData.parentId)
+        if (parentNote) {
+          noteData.spaceId = parentNote.spaceId
+          noteData.topicId = parentNote.topicId
+        } else {
+          // Fallback to current spaceId and topicId
+          noteData.spaceId = spaceId.value
+          noteData.topicId = topicId.value
+        }
+      } else {
+        noteData.spaceId = spaceId.value
+        noteData.topicId = topicId.value
+      }
       api
         .post('/notes', noteData)
         .then((response) => {
