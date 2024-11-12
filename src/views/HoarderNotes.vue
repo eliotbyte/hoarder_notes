@@ -72,17 +72,9 @@
                       <!-- Tag Input -->
                       <TagInput v-model="filterTags" />
                       <!-- Not Reply Checkbox -->
-                      <n-checkbox v-model="notReply">Not Reply</n-checkbox>
-                      <!-- Apply Button -->
-                      <div class="filter-apply-button">
-                        <n-button
-                          type="primary"
-                          :disabled="!filtersChanged"
-                          @click="applyFilters"
-                        >
-                          Apply
-                        </n-button>
-                      </div>
+                      <n-checkbox v-model:checked="notReply"
+                        >Not Reply</n-checkbox
+                      >
                     </div>
                   </transition>
                 </div>
@@ -96,16 +88,8 @@
 </template>
 
 <script>
-import {
-  NLayout,
-  NLayoutContent,
-  NRow,
-  NCol,
-  NCheckbox,
-  NButton,
-  NIcon,
-} from 'naive-ui'
-import { ref, onMounted, watch, computed } from 'vue'
+import { NLayout, NLayoutContent, NRow, NCol, NCheckbox, NIcon } from 'naive-ui'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import HoarderHeader from '@/components/HoarderHeader.vue'
 import TagInput from '@/components/TagInput.vue'
@@ -121,7 +105,6 @@ export default {
     NRow,
     NCol,
     NCheckbox,
-    NButton,
     NIcon,
     HoarderHeader,
     TagInput,
@@ -139,29 +122,17 @@ export default {
     const filtersExpanded = ref(false)
     const filterTags = ref([])
     const notReply = ref(false)
-    const initialFilterTags = ref([])
-    const initialNotReply = ref(false)
-
-    const filtersChanged = computed(() => {
-      return (
-        JSON.stringify(filterTags.value) !==
-          JSON.stringify(initialFilterTags.value) ||
-        notReply.value !== initialNotReply.value
-      )
-    })
 
     const toggleFilters = () => {
       filtersExpanded.value = !filtersExpanded.value
     }
 
-    const applyFilters = () => {
-      // Update query parameters
+    const updateFiltersInQuery = () => {
       const query = {
         ...route.query,
         tags:
           filterTags.value.length > 0 ? filterTags.value.join(',') : undefined,
         notReply: notReply.value ? 'true' : undefined,
-        date: new Date().toISOString().split('.')[0] + 'Z',
       }
 
       // Remove undefined keys
@@ -170,11 +141,22 @@ export default {
       )
 
       router.replace({ query })
-
-      // Update initial values
-      initialFilterTags.value = [...filterTags.value]
-      initialNotReply.value = notReply.value
     }
+
+    watch(
+      () => filterTags.value,
+      () => {
+        updateFiltersInQuery()
+      },
+      { deep: true }
+    )
+
+    watch(
+      () => notReply.value,
+      () => {
+        updateFiltersInQuery()
+      }
+    )
 
     const loadSpaces = async () => {
       try {
@@ -217,14 +199,9 @@ export default {
       // Set filters from query parameters
       if (route.query.tags) {
         filterTags.value = route.query.tags.split(',')
-        initialFilterTags.value = [...filterTags.value]
       }
       if (route.query.notReply) {
         notReply.value = route.query.notReply === 'true'
-        initialNotReply.value = notReply.value
-      }
-      if (route.query.date) {
-        date.value = route.query.date
       }
       // Expand filters if any filter is set
       if (route.query.tags || route.query.notReply) {
@@ -253,8 +230,6 @@ export default {
       toggleFilters,
       filterTags,
       notReply,
-      applyFilters,
-      filtersChanged,
       ChevronForward,
       date,
     }
@@ -354,9 +329,5 @@ export default {
 .filters-content {
   margin-left: 16px;
   overflow: hidden;
-}
-
-.filter-apply-button {
-  margin-top: 10px;
 }
 </style>
