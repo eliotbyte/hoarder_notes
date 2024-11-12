@@ -1,67 +1,45 @@
-<!-- ./src/views/HoarderSpecificNote.vue -->
 <template>
   <div class="common-layout">
     <n-layout>
       <HoarderHeader />
       <n-layout-content class="layout-content">
-        <div class="grid-content p-4 grid gap-1">
-          <!-- Main Note -->
-          <div class="content-block">
-            <NoteItem
-              :note="note"
-              :format-time="formatTime"
-              :mode="note.mode || 'view'"
-              @update-note="handleUpdateNote"
-              @reply-click="handleReplyClick"
-              @chat-click="handleChatClick"
-              @time-click="handleTimeClick"
-              @dropdown-command="handleDropdownCommand"
-              @restore-note="handleRestoreNote"
-            />
-          </div>
-          <!-- Reply Input -->
-          <div class="content-block">
-            <NoteItem
-              :note="{}"
-              mode="create"
-              :parent-note="note"
-              :format-time="formatTime"
-              @create-note="handleCreateReply"
-            />
-          </div>
-          <!-- Replies -->
-          <div
-            v-for="(reply, index) in replies"
-            :key="reply.id || `reply-${index}`"
-            class="content-block"
-          >
-            <NoteItem
-              :note="reply"
-              :format-time="formatTime"
-              :parent-note="note"
-              :mode="reply.mode || 'view'"
-              :index="index"
-              @update-note="handleUpdateNote"
-              @reply-click="handleReplyClick"
-              @chat-click="handleChatClick"
-              @time-click="handleTimeClick"
-              @dropdown-command="handleDropdownCommand"
-              @restore-note="handleRestoreNote"
-            />
-          </div>
-          <div v-if="loading">Loading replies...</div>
-        </div>
+        <n-row :gutter="30" justify="center">
+          <n-col :span="12">
+            <div class="grid-content p-4 grid gap-1">
+              <!-- Main Parent Note -->
+              <div class="content-block" v-if="note">
+                <NoteItem
+                  :note="note"
+                  :format-time="formatTime"
+                  :mode="'view'"
+                />
+              </div>
+              <!-- Reply Input -->
+              <div class="content-block" v-if="note">
+                <NoteItem
+                  :note="{}"
+                  :parent-note="note"
+                  mode="create"
+                  @create-note="handleCreateNote"
+                />
+              </div>
+              <!-- Feed of Replies -->
+              <NoteFeed :parent-id="noteId" :date="date" />
+            </div>
+          </n-col>
+        </n-row>
       </n-layout-content>
     </n-layout>
   </div>
 </template>
 
 <script>
-import { NLayout, NLayoutContent, useDialog } from 'naive-ui'
+import { NLayout, NLayoutContent, NRow, NCol } from 'naive-ui'
 import { ref, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import NoteItem from '@/components/NoteItem.vue'
+import { useRoute } from 'vue-router'
 import HoarderHeader from '@/components/HoarderHeader.vue'
+import NoteItem from '@/components/NoteItem.vue'
+import NoteFeed from '@/components/NoteFeed.vue'
 import api from '@/utils/api.js'
 
 export default {
@@ -69,127 +47,41 @@ export default {
   components: {
     NLayout,
     NLayoutContent,
-    NoteItem,
+    NRow,
+    NCol,
     HoarderHeader,
+    NoteItem,
+    NoteFeed,
   },
   setup() {
-    const router = useRouter()
     const route = useRoute()
-    const note = ref({})
-    const replies = ref([])
-    const loading = ref(false)
-    const dialog = useDialog()
+    const noteId = Number(route.params.id)
+    const note = ref(null)
+    const date = ref(new Date().toISOString().split('.')[0] + 'Z')
 
     const loadNote = async () => {
       try {
-        const response = await api.get(`/notes/${route.params.id}`)
+        const response = await api.get(`/notes/${noteId}`)
         note.value = response.data
-        loadReplies()
       } catch (error) {
         console.error('Error loading note:', error)
       }
     }
 
-    const loadReplies = async (page = 1, pageSize = 10) => {
-      loading.value = true
-      try {
-        const response = await api.get('/notes', {
-          params: {
-            parentId: route.params.id,
-            page,
-            pageSize,
-          },
-        })
-        if (page === 1) {
-          replies.value = response.data.data
-        } else {
-          replies.value.push(...response.data.data)
-        }
-        // You can handle pagination flags here if needed
-      } catch (error) {
-        console.error('Error loading replies:', error)
-      } finally {
-        loading.value = false
-      }
-    }
-
-    const handleUpdateNote = (noteData, noteItem) => {
-      api
-        .put(`/notes/${noteItem.id}`, noteData)
-        .then((response) => {
-          Object.assign(noteItem, response.data)
-          noteItem.mode = 'view'
-        })
-        .catch((error) => {
-          console.error('Error updating note:', error)
-        })
-    }
-
-    const handleCreateReply = (noteData) => {
-      noteData.parentId = note.value.id
+    const handleCreateNote = (noteData) => {
+      noteData.parentId = noteId
       noteData.spaceId = note.value.spaceId
       noteData.topicId = note.value.topicId
       api
         .post('/notes', noteData)
-        .then((response) => {
-          replies.value.unshift({ ...response.data, mode: 'view' })
+        .then(() => {
+          // Optionally, you can reload the feed or handle the new reply
+          // For simplicity, let's reload the page
+          window.location.reload()
         })
         .catch((error) => {
-          console.error('Error creating reply:', error)
+          console.error('Error creating note:', error)
         })
-    }
-
-    const handleReplyClick = (noteItem) => {
-      if (noteItem.parentId) {
-        router.push(`/notes/${noteItem.parentId}`)
-      }
-    }
-
-    const handleChatClick = (noteItem) => {
-      router.push(`/notes/${noteItem.id}`)
-    }
-
-    const handleTimeClick = (noteItem) => {
-      router.push(`/notes/${noteItem.id}`)
-    }
-
-    const handleDropdownCommand = (command, noteItem) => {
-      if (command === 'delete') {
-        dialog.warning({
-          title: 'Confirm Deletion',
-          content: 'Are you sure you want to delete this note?',
-          positiveText: 'Yes',
-          negativeText: 'No',
-          onPositiveClick: () => {
-            deleteNote(noteItem)
-          },
-        })
-      } else if (command === 'edit') {
-        noteItem.mode = 'edit'
-      } else if (command === 'reply') {
-        // Handle reply command if needed
-      } else {
-        console.log(`${command} clicked`, noteItem)
-      }
-    }
-
-    const deleteNote = async (noteItem) => {
-      try {
-        await api.delete(`/notes/${noteItem.id}`)
-        noteItem.deletedAt = new Date().toISOString()
-      } catch (error) {
-        console.error('Error deleting note:', error)
-      }
-    }
-
-    const handleRestoreNote = async (noteItem) => {
-      try {
-        await api.put(`/notes/${noteItem.id}/restore`)
-        noteItem.deletedAt = null
-        noteItem.mode = 'view'
-      } catch (error) {
-        console.error('Error restoring note:', error)
-      }
     }
 
     const formatTime = (createdAt) => {
@@ -229,17 +121,11 @@ export default {
     })
 
     return {
+      noteId,
       note,
-      replies,
-      handleUpdateNote,
-      handleCreateReply,
-      handleReplyClick,
-      handleChatClick,
-      handleTimeClick,
-      handleDropdownCommand,
-      handleRestoreNote,
       formatTime,
-      loading,
+      handleCreateNote,
+      date,
     }
   },
 }
@@ -261,10 +147,5 @@ export default {
 
 .grid-content {
   padding: 16px;
-}
-
-.n-icon {
-  font-size: 24px;
-  color: var(--text-color);
 }
 </style>

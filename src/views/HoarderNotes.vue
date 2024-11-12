@@ -40,43 +40,54 @@
             </div>
           </n-col>
           <n-col :span="12">
-            <div class="grid-content p-4 grid gap-1">
-              <!-- Empty NoteItem for creating new note -->
-              <div v-if="spaceId && topicId" class="content-block">
-                <NoteItem
-                  :note="{}"
-                  mode="create"
-                  :format-time="formatTime"
-                  @create-note="handleCreateNote"
-                />
-              </div>
-              <!-- Notes List -->
-              <div
-                v-for="(note, index) in notes"
-                :key="note.id || `reply-${index}`"
-                class="content-block"
-              >
-                <NoteItem
-                  :note="note"
-                  :format-time="formatTime"
-                  :parent-note="note.parentNote"
-                  :mode="note.mode || 'view'"
-                  :index="index"
-                  @create-note="handleCreateNote"
-                  @update-note="handleUpdateNote"
-                  @cancel-create="handleCancelCreate"
-                  @reply-click="handleReplyClick"
-                  @chat-click="handleChatClick"
-                  @time-click="handleTimeClick"
-                  @dropdown-command="handleDropdownCommand"
-                  @restore-note="handleRestoreNote"
-                />
-              </div>
-              <div v-if="loading">Loading...</div>
-            </div>
+            <NoteFeed
+              :space-id="spaceId"
+              :topic-id="topicId"
+              :tags="filterTags"
+              :not-reply="notReply"
+              :show-create-note-item="spaceId && topicId"
+              :date="date"
+            />
           </n-col>
           <n-col :span="6">
-            <div class="grid-content" />
+            <div class="grid-content">
+              <!-- Filters Block -->
+              <div class="content-block">
+                <div class="filters-list">
+                  <div class="filters-header" @click="toggleFilters">
+                    <span>Filters</span>
+                    <n-icon
+                      :style="{
+                        transform: filtersExpanded
+                          ? 'rotate(90deg)'
+                          : 'rotate(0deg)',
+                      }"
+                      style="float: right"
+                    >
+                      <ChevronForward />
+                    </n-icon>
+                  </div>
+                  <transition name="slide">
+                    <div v-if="filtersExpanded" class="filters-content">
+                      <!-- Tag Input -->
+                      <TagInput v-model="filterTags" />
+                      <!-- Not Reply Checkbox -->
+                      <n-checkbox v-model="notReply">Not Reply</n-checkbox>
+                      <!-- Apply Button -->
+                      <div class="filter-apply-button">
+                        <n-button
+                          type="primary"
+                          :disabled="!filtersChanged"
+                          @click="applyFilters"
+                        >
+                          Apply
+                        </n-button>
+                      </div>
+                    </div>
+                  </transition>
+                </div>
+              </div>
+            </div>
           </n-col>
         </n-row>
       </n-layout-content>
@@ -85,13 +96,22 @@
 </template>
 
 <script>
-import { NLayout, NLayoutContent, NRow, NCol, useDialog } from 'naive-ui'
-import { ref, onMounted, watch } from 'vue'
-import { useInfiniteScroll } from '@vueuse/core'
+import {
+  NLayout,
+  NLayoutContent,
+  NRow,
+  NCol,
+  NCheckbox,
+  NButton,
+  NIcon,
+} from 'naive-ui'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import NoteItem from '@/components/NoteItem.vue'
 import HoarderHeader from '@/components/HoarderHeader.vue'
+import TagInput from '@/components/TagInput.vue'
+import { ChevronForward } from '@vicons/ionicons5'
 import api from '@/utils/api.js'
+import NoteFeed from '@/components/NoteFeed.vue'
 
 export default {
   name: 'HoarderNotes',
@@ -100,21 +120,61 @@ export default {
     NLayoutContent,
     NRow,
     NCol,
-    NoteItem,
+    NCheckbox,
+    NButton,
+    NIcon,
     HoarderHeader,
+    TagInput,
+    ChevronForward,
+    NoteFeed,
   },
   setup() {
     const router = useRouter()
     const route = useRoute()
-    const notes = ref([])
-    const loading = ref(false)
-    const noMoreNotes = ref(false)
-    const page = ref(1)
-    const pageSize = ref(10)
+    const date = ref(new Date().toISOString().split('.')[0] + 'Z')
     const topicId = ref(null)
     const spaceId = ref(null)
     const spaces = ref([])
-    const dialog = useDialog()
+
+    const filtersExpanded = ref(false)
+    const filterTags = ref([])
+    const notReply = ref(false)
+    const initialFilterTags = ref([])
+    const initialNotReply = ref(false)
+
+    const filtersChanged = computed(() => {
+      return (
+        JSON.stringify(filterTags.value) !==
+          JSON.stringify(initialFilterTags.value) ||
+        notReply.value !== initialNotReply.value
+      )
+    })
+
+    const toggleFilters = () => {
+      filtersExpanded.value = !filtersExpanded.value
+    }
+
+    const applyFilters = () => {
+      // Update query parameters
+      const query = {
+        ...route.query,
+        tags:
+          filterTags.value.length > 0 ? filterTags.value.join(',') : undefined,
+        notReply: notReply.value ? 'true' : undefined,
+        date: new Date().toISOString().split('.')[0] + 'Z',
+      }
+
+      // Remove undefined keys
+      Object.keys(query).forEach(
+        (key) => query[key] === undefined && delete query[key]
+      )
+
+      router.replace({ query })
+
+      // Update initial values
+      initialFilterTags.value = [...filterTags.value]
+      initialNotReply.value = notReply.value
+    }
 
     const loadSpaces = async () => {
       try {
@@ -141,195 +201,6 @@ export default {
       }
     }
 
-    const handleDropdownCommand = (command, note) => {
-      if (command === 'delete') {
-        dialog.warning({
-          title: 'Confirm Deletion',
-          content: 'Are you sure you want to delete this note?',
-          positiveText: 'Yes',
-          negativeText: 'No',
-          onPositiveClick: () => {
-            deleteNote(note)
-          },
-        })
-      } else if (command === 'edit') {
-        note.mode = 'edit'
-      } else if (command === 'reply') {
-        const index = notes.value.findIndex((n) => n.id === note.id)
-        if (index !== -1) {
-          if (
-            !notes.value[index + 1] ||
-            notes.value[index + 1].isReply !== true
-          ) {
-            notes.value.splice(index + 1, 0, {
-              isReply: true,
-              parentNote: note,
-              mode: 'create',
-              note: {},
-            })
-          }
-        }
-      } else {
-        console.log(`${command} clicked`, note)
-      }
-    }
-
-    const deleteNote = async (note) => {
-      try {
-        await api.delete(`/notes/${note.id}`)
-        notes.value = notes.value.map((n) =>
-          n.id === note.id ? { ...n, deletedAt: new Date().toISOString() } : n
-        )
-      } catch (error) {
-        console.error('Error deleting note:', error)
-      }
-    }
-
-    const handleRestoreNote = async (note, index) => {
-      try {
-        await api.put(`/notes/${note.id}/restore`)
-        notes.value[index] = { ...note, deletedAt: null, mode: 'view' }
-      } catch (error) {
-        console.error('Error restoring note:', error)
-      }
-    }
-
-    const handleReplyClick = (noteItem) => {
-      if (noteItem.parentId) {
-        router.push(`/notes/${noteItem.parentId}`)
-      }
-    }
-
-    const handleChatClick = (noteItem) => {
-      router.push(`/notes/${noteItem.id}`)
-    }
-
-    const handleTimeClick = (noteItem) => {
-      router.push(`/notes/${noteItem.id}`)
-    }
-
-    const formatTime = (createdAt) => {
-      const now = new Date()
-      const created = new Date(createdAt)
-      const diff = now - created
-
-      const seconds = Math.floor(diff / 1000)
-      const minutes = Math.floor(seconds / 60)
-      const hours = Math.floor(minutes / 60)
-      const days = Math.floor(hours / 24)
-      const years = now.getFullYear() - created.getFullYear()
-
-      if (seconds < 60) {
-        return `${seconds} seconds ago`
-      } else if (minutes < 60) {
-        return `${minutes} minutes ago`
-      } else if (hours < 24) {
-        return `${hours} hours ago`
-      } else if (days < 30) {
-        return `${days} days ago`
-      } else if (years < 1) {
-        return created.toLocaleDateString(undefined, {
-          month: 'long',
-          day: 'numeric',
-        })
-      } else {
-        return created.toLocaleDateString(undefined, {
-          month: 'long',
-          year: 'numeric',
-        })
-      }
-    }
-
-    const loadMoreNotes = async () => {
-      if (loading.value || noMoreNotes.value) return
-      if (!spaceId.value) {
-        loading.value = false
-        return
-      }
-      loading.value = true
-
-      try {
-        const params = {
-          page: page.value,
-          pageSize: pageSize.value,
-          spaceId: spaceId.value,
-        }
-        if (topicId.value) {
-          params.topicId = topicId.value
-        }
-
-        const response = await api.get('/notes', { params })
-
-        if (response.data.data.length < pageSize.value) {
-          noMoreNotes.value = true
-        }
-
-        notes.value.push(
-          ...response.data.data.map((note) => ({ ...note, mode: 'view' }))
-        )
-        page.value += 1
-      } catch (error) {
-        console.error('Error loading notes:', error)
-      } finally {
-        loading.value = false
-      }
-    }
-
-    useInfiniteScroll(window, loadMoreNotes, {
-      distance: 100,
-      immediate: false,
-    })
-
-    const handleCreateNote = (noteData, index) => {
-      if (noteData.parentId) {
-        // This is a reply note, get spaceId and topicId from the parent note
-        const parentNote = notes.value.find((n) => n.id === noteData.parentId)
-        if (parentNote) {
-          noteData.spaceId = parentNote.spaceId
-          noteData.topicId = parentNote.topicId
-        } else {
-          // Fallback to current spaceId and topicId
-          noteData.spaceId = spaceId.value
-          noteData.topicId = topicId.value
-        }
-      } else {
-        noteData.spaceId = spaceId.value
-        noteData.topicId = topicId.value
-      }
-      api
-        .post('/notes', noteData)
-        .then((response) => {
-          if (notes.value[index] && notes.value[index].isReply) {
-            notes.value.splice(index, 1, { ...response.data, mode: 'view' })
-          } else {
-            notes.value.unshift({ ...response.data, mode: 'view' })
-          }
-        })
-        .catch((error) => {
-          console.error('Error creating note:', error)
-        })
-    }
-
-    const handleUpdateNote = (noteData, note) => {
-      noteData.topicId = topicId.value
-      noteData.spaceId = spaceId.value
-      api
-        .put(`/notes/${note.id}`, noteData)
-        .then((response) => {
-          Object.assign(note, response.data)
-          note.mode = 'view'
-        })
-        .catch((error) => {
-          console.error('Error updating note:', error)
-        })
-    }
-
-    const handleCancelCreate = (index) => {
-      if (notes.value[index].isReply) {
-        notes.value.splice(index, 1)
-      }
-    }
-
     const selectSpace = (space) => {
       spaceId.value = space.id
       topicId.value = null
@@ -342,13 +213,26 @@ export default {
 
     onMounted(() => {
       loadSpaces()
+
+      // Set filters from query parameters
+      if (route.query.tags) {
+        filterTags.value = route.query.tags.split(',')
+        initialFilterTags.value = [...filterTags.value]
+      }
+      if (route.query.notReply) {
+        notReply.value = route.query.notReply === 'true'
+        initialNotReply.value = notReply.value
+      }
+      if (route.query.date) {
+        date.value = route.query.date
+      }
+      // Expand filters if any filter is set
+      if (route.query.tags || route.query.notReply) {
+        filtersExpanded.value = true
+      }
     })
 
     watch([spaceId, topicId], ([newSpaceId, newTopicId]) => {
-      // Reset notes
-      notes.value = []
-      page.value = 1
-      noMoreNotes.value = false
       // Update the route query parameters
       router.replace({
         query: {
@@ -357,28 +241,22 @@ export default {
           topicId: newTopicId,
         },
       })
-      // Load notes
-      loadMoreNotes()
     })
 
     return {
-      handleDropdownCommand,
-      handleReplyClick,
-      handleChatClick,
-      handleTimeClick,
-      notes,
-      loading,
-      loadMoreNotes,
-      formatTime,
-      handleCreateNote,
-      handleUpdateNote,
-      handleCancelCreate,
-      handleRestoreNote,
       spaces,
       spaceId,
       topicId,
       selectSpace,
       selectTopic,
+      filtersExpanded,
+      toggleFilters,
+      filterTags,
+      notReply,
+      applyFilters,
+      filtersChanged,
+      ChevronForward,
+      date,
     }
   },
 }
@@ -455,5 +333,30 @@ export default {
 .slide-leave-from {
   max-height: 500px; /* Adjust as needed */
   opacity: 1;
+}
+
+.filters-list {
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+
+.filters-header {
+  padding: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filters-content {
+  margin-left: 16px;
+  overflow: hidden;
+}
+
+.filter-apply-button {
+  margin-top: 10px;
 }
 </style>
