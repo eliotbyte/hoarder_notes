@@ -1,11 +1,16 @@
 <template>
   <div class="grid-content p-4 grid gap-1">
+    <!-- Display the specific note if parentId is provided -->
+    <div v-if="parentNote" class="content-block">
+      <NoteItem :note="parentNote" :format-time="formatTime" mode="view" />
+    </div>
     <!-- Optional Create Note Item -->
     <div v-if="showCreateNoteItem" class="content-block">
       <NoteItem
         :note="{}"
         mode="create"
         :format-time="formatTime"
+        :parent-note="parentNote"
         @create-note="handleCreateNote"
       />
     </div>
@@ -94,13 +99,21 @@ export default {
     const noMoreNotes = ref(false)
     const page = ref(1)
     const pageSize = ref(10)
+    const parentNote = ref(null)
+
+    const loadParentNote = async () => {
+      if (props.parentId) {
+        try {
+          const response = await api.get(`/notes/${props.parentId}`)
+          parentNote.value = { ...response.data, mode: 'view' }
+        } catch (error) {
+          console.error('Error loading parent note:', error)
+        }
+      }
+    }
 
     const loadMoreNotes = async () => {
       if (loading.value || noMoreNotes.value) return
-      if (!props.spaceId && !props.parentId) {
-        loading.value = false
-        return
-      }
       loading.value = true
 
       try {
@@ -140,6 +153,33 @@ export default {
       } finally {
         loading.value = false
       }
+    }
+
+    // Modify the infinite scroll behavior to reset when parentId changes
+    watch(
+      () => [
+        props.spaceId,
+        props.topicId,
+        props.parentId,
+        props.tags,
+        props.notReply,
+        props.date,
+      ],
+      () => {
+        resetFeed()
+      }
+    )
+
+    const resetFeed = () => {
+      notes.value = []
+      page.value = 1
+      noMoreNotes.value = false
+      loadNotes()
+    }
+
+    const loadNotes = async () => {
+      await loadParentNote()
+      await loadMoreNotes()
     }
 
     useInfiniteScroll(window, loadMoreNotes, {
@@ -252,16 +292,34 @@ export default {
 
     const handleReplyClick = (noteItem) => {
       if (noteItem.parentId) {
-        router.push(`/notes/${noteItem.parentId}`)
+        router.push({
+          path: `/notes/${noteItem.parentId}`,
+          query: {
+            spaceId: props.spaceId || null,
+            topicId: props.topicId || null,
+          },
+        })
       }
     }
 
     const handleChatClick = (noteItem) => {
-      router.push(`/notes/${noteItem.id}`)
+      router.push({
+        path: `/notes/${noteItem.id}`,
+        query: {
+          spaceId: props.spaceId || null,
+          topicId: props.topicId || null,
+        },
+      })
     }
 
     const handleTimeClick = (noteItem) => {
-      router.push(`/notes/${noteItem.id}`)
+      router.push({
+        path: `/notes/${noteItem.id}`,
+        query: {
+          spaceId: props.spaceId || null,
+          topicId: props.topicId || null,
+        },
+      })
     }
 
     const formatTime = (createdAt) => {
@@ -296,13 +354,6 @@ export default {
       }
     }
 
-    const resetFeed = () => {
-      notes.value = []
-      page.value = 1
-      noMoreNotes.value = false
-      loadMoreNotes()
-    }
-
     // Watch for changes in props to reload the feed
     watch(
       () => [
@@ -319,12 +370,13 @@ export default {
     )
 
     onMounted(() => {
-      loadMoreNotes()
+      loadNotes()
     })
 
     return {
       notes,
       loading,
+      parentNote,
       handleCreateNote,
       handleUpdateNote,
       handleCancelCreate,

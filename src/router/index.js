@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HoarderAuth from '../views/HoarderAuth.vue'
 import HoarderNotes from '../views/HoarderNotes.vue'
-import HoarderSpecificNote from '../views/HoarderSpecificNote.vue'
 
 const routes = [
   {
@@ -21,8 +20,8 @@ const routes = [
   },
   {
     path: '/notes/:id',
-    name: 'HoarderSpecificNote',
-    component: HoarderSpecificNote,
+    name: 'HoarderNoteDetail',
+    component: HoarderNotes, // Use the same component
     meta: { requiresAuth: true },
   },
 ]
@@ -30,6 +29,15 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      // Use the saved scroll position if available
+      return savedPosition
+    } else {
+      // Scroll to top when navigating to a new route
+      return { top: 0 }
+    }
+  },
 })
 
 router.beforeEach((to, from, next) => {

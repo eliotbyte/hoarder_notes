@@ -8,6 +8,14 @@
             <div class="grid-content">
               <!-- Spaces and Topics List -->
               <div class="content-block">
+                <div v-if="showBackButton">
+                  <n-button text @click="goBack">
+                    <n-icon>
+                      <ArrowBackOutline />
+                    </n-icon>
+                    Back
+                  </n-button>
+                </div>
                 <div class="spaces-list">
                   <div
                     v-for="space in spaces"
@@ -40,14 +48,27 @@
             </div>
           </n-col>
           <n-col :span="12">
-            <NoteFeed
-              :space-id="spaceId"
-              :topic-id="topicId"
-              :tags="filterTags"
-              :not-reply="notReply"
-              :show-create-note-item="spaceId && topicId"
-              :date="date"
-            />
+            <div v-if="noteId">
+              <!-- NoteFeed for specific note -->
+              <NoteFeed
+                :parent-id="noteId"
+                :tags="filterTags"
+                :not-reply="notReply"
+                :show-create-note-item="true"
+                :date="date"
+              />
+            </div>
+            <div v-else>
+              <!-- NoteFeed for all notes -->
+              <NoteFeed
+                :space-id="spaceId"
+                :topic-id="topicId"
+                :tags="filterTags"
+                :not-reply="notReply"
+                :show-create-note-item="spaceId && topicId"
+                :date="date"
+              />
+            </div>
           </n-col>
           <n-col :span="6">
             <div class="grid-content">
@@ -88,12 +109,20 @@
 </template>
 
 <script>
-import { NLayout, NLayoutContent, NRow, NCol, NCheckbox, NIcon } from 'naive-ui'
-import { ref, onMounted, watch } from 'vue'
+import {
+  NLayout,
+  NLayoutContent,
+  NRow,
+  NCol,
+  NCheckbox,
+  NIcon,
+  NButton,
+} from 'naive-ui'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import HoarderHeader from '@/components/HoarderHeader.vue'
 import TagInput from '@/components/TagInput.vue'
-import { ChevronForward } from '@vicons/ionicons5'
+import { ChevronForward, ArrowBackOutline } from '@vicons/ionicons5'
 import api from '@/utils/api.js'
 import NoteFeed from '@/components/NoteFeed.vue'
 
@@ -106,9 +135,11 @@ export default {
     NCol,
     NCheckbox,
     NIcon,
+    NButton,
     HoarderHeader,
     TagInput,
     ChevronForward,
+    ArrowBackOutline,
     NoteFeed,
   },
   setup() {
@@ -117,11 +148,23 @@ export default {
     const date = ref(new Date().toISOString().split('.')[0] + 'Z')
     const topicId = ref(null)
     const spaceId = ref(null)
+    const noteId = ref(null)
     const spaces = ref([])
 
     const filtersExpanded = ref(false)
     const filterTags = ref([])
     const notReply = ref(false)
+
+    // Scroll position management
+    const scrollPositions = ref({})
+
+    if (route.params.id) {
+      noteId.value = route.params.id
+    }
+
+    const showBackButton = computed(() => {
+      return noteId.value && route.query.spaceId
+    })
 
     const toggleFilters = () => {
       filtersExpanded.value = !filtersExpanded.value
@@ -193,6 +236,28 @@ export default {
       topicId.value = topic.id
     }
 
+    const goBack = () => {
+      router.back()
+    }
+
+    watch(
+      () => route.params.id,
+      (newId, oldId) => {
+        noteId.value = newId
+        if (newId) {
+          // Save scroll position when navigating to specific note
+          scrollPositions.value[oldId || 'main'] = window.scrollY
+          window.scrollTo(0, 0) // Reset scroll to top
+        } else {
+          // Restore scroll position when navigating back
+          const scrollPos = scrollPositions.value['main'] || 0
+          setTimeout(() => {
+            window.scrollTo(0, scrollPos)
+          }, 0)
+        }
+      }
+    )
+
     onMounted(() => {
       loadSpaces()
 
@@ -206,6 +271,14 @@ export default {
       // Expand filters if any filter is set
       if (route.query.tags || route.query.notReply) {
         filtersExpanded.value = true
+      }
+
+      // Set spaceId and topicId from query parameters
+      if (route.query.spaceId) {
+        spaceId.value = Number(route.query.spaceId)
+      }
+      if (route.query.topicId) {
+        topicId.value = Number(route.query.topicId)
       }
     })
 
@@ -231,7 +304,12 @@ export default {
       filterTags,
       notReply,
       ChevronForward,
+      ArrowBackOutline,
       date,
+      noteId,
+      showBackButton,
+      goBack,
+      route,
     }
   },
 }
@@ -306,7 +384,7 @@ export default {
 
 .slide-enter-to,
 .slide-leave-from {
-  max-height: 500px; /* Adjust as needed */
+  max-height: 500px;
   opacity: 1;
 }
 
